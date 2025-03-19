@@ -22,9 +22,6 @@ interface Usuario {
 const MeuPerfil = () => {
   const [usuario, setUsuario] = useState<Usuario | null> (null);
   const [modoEdicao, setModoEdicao] = useState<boolean>(false);
-  const [senhaAtual, setSenhaAtual] = useState<string>('');
-  const [novaSenha, setNovaSenha] = useState<string>('');
-  const [confirmarSenha, setConfirmarSenha] = useState<string>('');
   const [excluir, setExcluir] = useState<boolean>(false);
 
   const transicao = {
@@ -77,10 +74,7 @@ const MeuPerfil = () => {
       }
       const emailDecodificado: {email:string} = jwtDecode(token);
       const res = await axios.put(`http://localhost:3000/users/update-user/${emailDecodificado.email}`, {
-        ...usuario, 
-        senhaAtual, 
-        novaSenha, 
-        confirmarSenha
+        ...usuario
       });
       console.log(res);
       setModoEdicao(false);
@@ -230,67 +224,7 @@ const MeuPerfil = () => {
                 </div>
               </div>
             </div>
-
-
-
-            {modoEdicao ? 
-            (
-            <motion.div key="modoEdicao" {...transicao} className='perfil-modo-edicao'>
-              <div className='caixa-input-perfil'>
-                <div className='informacoes-pessoais-perfil-organizador'>
-                  <p className='texto-informacoes-pessoal'>Segurança</p>
-                  </div>
-                    <div className='campos-informacoes-pessoais-perfil-organizador'>
-                      <div className='alinhamento-campos'>
-                        <div className='titulo-input-perfil'>
-                          <h1 className='texto-input-perfil'>Senha atual</h1>
-                          <div className='inputs-perfil'>
-                            <Input onChange={(event: ChangeEvent<HTMLInputElement>) => setSenhaAtual(event.target.value)}/>
-                          </div>
-                        </div>
-                      </div>
-                      <div className='alinhamento-campos'>
-                        <div className='titulo-input-perfil'>
-                        <div className='inputs-perfil'>
-                          <Input           
-                              dica='Digite sua nova senha'
-                              obrigatorio
-                              name='nova-senha'
-                              onChange={(event: ChangeEvent<HTMLInputElement>) => setNovaSenha(event.target.value)}
-                              cabecalho
-                              cabecalhoTexto='Nova senha'
-                              />
-                          </div>
-                        </div>
-                        <div className='titulo-input-perfil'>
-                        <div className='inputs-perfil'>
-                        <Input                    
-                              dica='Confirme sua nova senha'
-                              obrigatorio
-                              name='Confirme'
-                              onChange={(event: ChangeEvent<HTMLInputElement>) => setConfirmarSenha(event.target.value)}
-                              cabecalho
-                              cabecalhoTexto='Confirme sua nova senha'
-                              />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className='botoes-alterar-perfil'>
-              <div className='botao-editar'>
-                <Botao tamanho='max' funcao={() => setModoEdicao(false)} texto='Cancelar' />
-              </div>
-              <div className='botao-editar'>
-                <Botao tamanho='max' funcao={editarPerfil} texto='Salvar' />
-              </div>
-              </div>
-            </motion.div>
-            ) 
-            : 
-            (
-              <motion.div key="foraModoEdicao" {...transicao} className='perfil-fora-modo-edicao'>
-                <div className='caixa-input-perfil'>
+            <div className='caixa-input-perfil'>
                   <div className='informacoes-pessoais-perfil-organizador'>
                   <p className='texto-informacoes-pessoal'>Segurança</p>
                   </div>
@@ -305,6 +239,25 @@ const MeuPerfil = () => {
                   </div>
                 </div>
               </div>
+
+
+
+            {modoEdicao ? 
+            (
+            <motion.div key="modoEdicao" {...transicao} className='perfil-modo-edicao'>
+            <div className='botoes-alterar-perfil'>
+              <div className='botao-editar'>
+                <Botao tamanho='max' funcao={() => setModoEdicao(false)} texto='Cancelar' />
+              </div>
+              <div className='botao-editar'>
+                <Botao tamanho='max' funcao={editarPerfil} texto='Salvar' />
+              </div>
+              </div>
+            </motion.div>
+            ) 
+            : 
+            (
+              <motion.div key="foraModoEdicao" {...transicao} className='perfil-fora-modo-edicao'>
                 <div className='botoes-alterar-perfil'>
                   <div className='botao-editar'>
                     <Botao tamanho='max' funcao={() => setModoEdicao(true)} texto='Editar' />
