@@ -1,0 +1,46 @@
+@import url('../../App.css');
+
+.botao{
+    border-radius: 1rem;
+    cursor: pointer;
+    font-family: var(--fonte-principal);
+    transition: background-color .5s, filter .5s;
+    font-weight: 500;
+}
+
+.botao--solido{
+    background-color: var(--cor-principal);
+    border: none;
+    color:white;
+}
+
+.botao--vazado{
+    background-color: transparent;
+    border: 1px solid var(--cor-principal);
+    color: var(--cor-principal);
+}
+
+.botao:focus{
+    outline: none;
+    filter: saturate(150%);
+}
+
+.botao:hover{
+    filter: brightness(85%);
+}
+
+.botao:active{
+    filter: brightness(70%)
+}
+
+.min{
+    padding:6px 12px ;
+}
+
+.med{
+    padding: 8px 20px;
+}
+
+.max{
+    padding: 12px 24px;
+}

@@ -1,0 +1,104 @@
+@import url(../../App.css);
+
+.label-input{
+    font-weight: 300;
+    color: black;
+    font-size: 1rem;
+    margin-bottom: .5rem;
+}
+
+.container-input{
+    position: relative;
+}
+
+.input{
+    width: 100%;
+    border: solid #CED4DA 1px;
+    border-radius: 8px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    font-family: var(--fonte-principal) ;
+    background-color: white ;
+    box-shadow: 0px 2px 2px 0px rgba(33, 37, 41, 0.06), 0px 0px 1px 0px rgba(33, 37, 41, 0.08);
+    text-overflow: ellipsis;
+}
+
+.input[type='date']{
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    min-height: 2.75rem;
+}
+
+.input-padding-sem-icone{
+    padding: 9px 16px;
+}
+
+.input-padding-direita{
+    padding-right: 48px;
+    padding-left: 16px;
+}
+
+.input-padding-esquerda{
+    padding-right: 16px;
+    padding-left: 48px;
+}
+
+.input[type='text']:invalid:not(:placeholder-shown),
+.input[type='email']:invalid:not(:placeholder-shown),
+.input[type='password']:invalid:not(:placeholder-shown){
+    outline: solid #B2261D 2px;
+    border-color: transparent;
+}
+
+.input:invalid:focus:invalid:not(:placeholder-shown){
+    outline: solid #FF9500 2px;
+    border-color: transparent;
+}
+
+.input:focus{
+    outline: solid var(--purple-700) 2px;
+    border-color: transparent;
+}
+
+.input::placeholder{
+    font-family: var(--fonte-principal);
+}
+
+.icone-input{
+    position: absolute;
+    top: 35%;
+}
+
+.icone-input-direita{
+    right: 1.1rem;
+}
+
+.icone-input-esquerda{
+    left: 1.1rem;
+}
+
+.icone-input-botao{
+    position: absolute;
+    top: 25.55%;
+}
+
+.icone-input-botao-direita{
+    right: 1.035rem;
+}
+
+.icone-input-botao-esquerda{
+    left: 1.035rem;
+}
+
+.icone-botao{
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    width: 20px;
+    color: inherit;
+}
+
+.icone-estilo{
+    color: #a3a3a3;
+}

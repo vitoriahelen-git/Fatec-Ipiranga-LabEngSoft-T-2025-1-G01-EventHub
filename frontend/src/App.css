@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root{
+    --purple-900: #55379D;
+    --purple-800: #6A40C3;
+    --purple-700: #8C5DFF;
+    --purple-400: #8135E6;
+    --fonte-principal: "Inter", sans-serif;
+}
+
+#root{
+    font-family: var(--fonte-principal);
+min-height: 100vh;
+}
+body{
+    min-height: 100vh;
+}
