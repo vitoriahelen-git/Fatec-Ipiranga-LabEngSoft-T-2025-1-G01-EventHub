@@ -1,0 +1,61 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql-eventhub-container
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: eventhub_teste
+    ports:
+      - "3333:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - cliente-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  backend:
+    build:
+      context: ./backend
+    image: backend-eventhub-image
+    container_name: backend-eventhub-container
+    environment:
+      SERVER_PORT: "3000"
+      DB_USER: root
+      DB_PASSWORD: "123456"
+      DB_HOST: mysql-eventhub-container
+      DB_DATABASE: eventhub_teste
+      DB_PORT: "3306"
+      JWT_SECRET_LOGIN: 07a39dd9-cec4-4d9f-84b8-9e938c8826c3
+      JWT_SECRET_RESET_PASSWORD: 4a81e642-c9b9-4b30-bbcb-3d1a6518a287
+      URL_FRONTEND: http://localhost:5173
+      EMAIL_USER: eventhub25@gmail.com
+      EMAIL_PASSWORD: sgnyooomkdkhcddi
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: "465"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    networks:
+      - cliente-network
+  frontend:
+    build:
+      context: ./frontend
+    image: frontend-eventhub-image
+    container_name: frontend-eventhub-container
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    networks:
+      - cliente-network          
+networks:
+    cliente-network:
+      driver: bridge
+
+volumes:
+    mysql-data:

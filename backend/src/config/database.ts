@@ -23,23 +23,45 @@ const sequelize = new Sequelize(DB_DATABASE!, DB_USER!, DB_PASSWORD!, {
 });
 
 const inicializarComDados = async () => {
-    await sequelize.models.Tipo.findOrCreate({
-        where:{
-            idTipo: 1
-        }, 
-        defaults:{
+    const tiposDeUsuario = [
+        {
             nomeTipo: 'Organizador de Eventos',
             descricaoTipo: 'Responsável pela coordenação e planejamento de eventos sociais.'
-        }
-    });
-    await sequelize.models.Tipo.findOrCreate({
-        where:{
-            idTipo: 2
-        }, 
-        defaults:{
+        },
+        {
             nomeTipo: 'Prestador de Serviços',
             descricaoTipo: 'Responsável por prestar serviços.'
         }
+    ];
+
+    const tiposDeEvento = [
+        "Aula", "Apresentação", "Casamento", "Celebração", "Cerimônia", "Comemoração", "Competição", 
+        "Conferência", "Encontro", "Evento acadêmico", "Evento corporativo", "Evento cultural", 
+        "Evento esportivo", "Evento religioso", "Exposição", "Feira", "Festival", "Festa", 
+        "Lançamento", "Palestra", "Reunião", "Seminário", "Show", "Treinamento", "Workshop"
+    ];
+
+    tiposDeUsuario.map(async (tipo, index) => {
+        await sequelize.models.Tipo.findOrCreate({
+            where:{
+                idTipo: index + 1
+            }, 
+            defaults:{
+                nomeTipo: tipo.nomeTipo,
+                descricaoTipo: tipo.descricaoTipo
+            }
+        });
+    });
+
+    tiposDeEvento.map(async (tipo, index) => {
+        await sequelize.models.TipoEvento.findOrCreate({
+            where:{
+                idTipoEvento: index + 1
+            }, 
+            defaults:{
+                descricaoTipoEvento: tipo
+            }
+        });
     });
 }
 

@@ -102,8 +102,10 @@ Usuario.init({
         beforeCreate: async (usuario: Usuario) => { 
             usuario.senhaUsu = await criptografarSenha(usuario.senhaUsu) 
         },
-        beforeUpdate: async (usuario: Usuario) => { 
-            usuario.senhaUsu = await criptografarSenha(usuario.senhaUsu) 
+        async beforeUpdate(instance) {
+            if(instance.changed('senhaUsu')){
+                instance.senhaUsu = await criptografarSenha(instance.senhaUsu)
+            }
         }
     }
 });

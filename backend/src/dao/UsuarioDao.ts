@@ -70,31 +70,4 @@ export default class UsuarioDao{
         await usuario.destroy(transaction ? {transaction} : {});
     }
 
-    public async editarUsuario(emailUsu: string, nomeUsu: string, sobrenomeUsu: string, dtNasUsu: Date, telUsu: string, cpfUsu: string, nomeEmpresa: string, telEmpresa: string, cnpjEmpresa: string, localizacaoEmpresa: string, transaction: Transaction | null = null){
-        await Usuario.update({
-            emailUsu,
-            nomeUsu,
-            sobrenomeUsu,
-            dtNasUsu,
-            telUsu,
-            cpfUsu,
-            nomeEmpresa,
-            telEmpresa,
-            cnpjEmpresa,
-            localizacaoEmpresa
-        }, {
-            where: {
-                emailUsu
-            },
-            transaction
-        });
-
-        const usuarioAlterado: Usuario | null = await Usuario.findOne({
-            where: {
-                emailUsu
-            },
-            transaction
-        });
-        return usuarioAlterado;
-    }
 }

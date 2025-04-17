@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import Usuario from "../models/Usuario";
 import UsuarioDao from "../dao/UsuarioDao";
 import UsuarioTipoDao from "../dao/UsuarioTipoDao";
-import { compararSenha, criptografarSenha } from "../utils/criptografiaSenha";
+import { compararSenha } from "../utils/criptografiaSenha";
 import enviarEmailRecuperacaoSenha from "../utils/enviaEmail";
 import { cnpj, cpf } from "cpf-cnpj-validator";
 
@@ -152,7 +152,6 @@ export default class UsuarioController {
                 res.status(401).json({mensagem: "Token inválido"});
                 return;
             }
-            criptografarSenha(novaSenha);
             usuario.senhaUsu = novaSenha;
             usuario.tokenUtilizado = true;
             await this.usuarioDao.atualizarUsuario(usuario);
@@ -257,12 +256,10 @@ export default class UsuarioController {
         }
     }
 
-
-
     public atualizarUsuario = async (req: Request, res: Response) => {
         const transaction = await sequelize.transaction();
         try{
-            let { nomeUsu, sobrenomeUsu, dtNasUsu, telUsu, cpfUsu, nomeEmpresa, telEmpresa, cnpjEmpresa, localizacaoEmpresa  } = req.body;
+            let { nomeUsu, sobrenomeUsu, dtNasUsu, telUsu, cpfUsu, nomeEmpresa, telEmpresa, cnpjEmpresa, localizacaoEmpresa, senhaAtual, novaSenha, confirmarSenha  } = req.body;
             const email = req.params.emailUsu;
             const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(email, transaction);
             if(!usuario){
@@ -273,11 +270,33 @@ export default class UsuarioController {
                 if(req.body[atributo] === ''){
                     req.body[atributo] = null;
                 }
-            await this.usuarioDao.editarUsuario(email, nomeUsu, sobrenomeUsu, dtNasUsu, telUsu, cpfUsu, nomeEmpresa, telEmpresa, cnpjEmpresa, localizacaoEmpresa, transaction);
+            }
+            if(senhaAtual){
+                const senhaValida = await compararSenha(senhaAtual, usuario.senhaUsu);
+                if(!senhaValida){
+                    res.status(401).json({mensagem: "Senha atual inválida"});
+                    return;
+                }
+                if(novaSenha){
+                    if(novaSenha !== confirmarSenha){
+                        res.status(400).json({mensagem: "As novas senhas não coincidem"});
+                        return;
+                    }
+                    usuario.senhaUsu = novaSenha;
+                }
+            }
+            usuario.nomeUsu = nomeUsu;
+            usuario.sobrenomeUsu = sobrenomeUsu;
+            usuario.dt_nasUsu = dtNasUsu;
+            usuario.telUsu = telUsu;
+            usuario.cpfUsu = cpfUsu;
+            usuario.nomeEmpresa = nomeEmpresa;
+            usuario.telEmpresa = telEmpresa;
+            usuario.cnpjEmpresa = cnpjEmpresa;
+            usuario.localizacaoEmpresa = localizacaoEmpresa;
+            await this.usuarioDao.atualizarUsuario(usuario, transaction);
             await transaction.commit();
             res.status(200).json({mensagem: "Usuário atualizado com sucesso"});
-            return;
-            }
         }
         catch(error){
             await transaction.rollback();

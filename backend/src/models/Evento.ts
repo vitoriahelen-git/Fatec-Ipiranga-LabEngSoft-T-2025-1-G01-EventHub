@@ -28,9 +28,33 @@ Evento.init(
             allowNull:false,
             defaultValue: 0
         },
-        localEvento:{
-            type:DataTypes.STRING,
-            allowNull:false
+        cepLocal:{
+            type:DataTypes.STRING(9),
+            allowNull:true
+        },
+        enderecoLocal:{
+            type:DataTypes.STRING(100),
+            allowNull:true
+        },
+        numeroLocal:{
+            type:DataTypes.STRING(10),
+            allowNull:true
+        },
+        complementoLocal:{
+            type:DataTypes.STRING(50),
+            allowNull:true
+        },
+        bairroLocal:{
+            type:DataTypes.STRING(50),
+            allowNull:true
+        },
+        cidadeLocal:{
+            type:DataTypes.STRING(50),
+            allowNull:true
+        },
+        ufLocal:{
+            type:DataTypes.STRING(2),
+            allowNull:true
         },
         horaInicio:{
             type:DataTypes.TIME,
@@ -43,6 +67,14 @@ Evento.init(
         nomeEvento:{
             type:DataTypes.STRING,
             allowNull:false
+        },
+        descricaoEvento:{
+            type:DataTypes.STRING(2000),
+            allowNull:true
+        },
+        imagemEvento:{
+            type:DataTypes.STRING(100),
+            allowNull:true
         },
         dataEvento:{
             type:DataTypes.DATEONLY,
@@ -59,12 +91,11 @@ Evento.init(
         idUsuario:{
             type:DataTypes.UUID,
             allowNull:false,
-            primaryKey:true,
             references:{
                 model:Usuario,
                 key:'codigo_usu'
             }
-        }
+        },
     },{
         sequelize,
         modelName:'Evento',
@@ -74,8 +105,8 @@ Evento.init(
     }
 );
 
-Usuario.hasMany(Evento,{foreignKey:'idUsuario'});
-TipoEvento.hasMany(Evento,{foreignKey:'idTipoEvento'});
+Usuario.hasMany(Evento,{foreignKey:'idUsuario',   onDelete: 'CASCADE'});
+TipoEvento.hasMany(Evento,{foreignKey:'idTipoEvento',   onDelete: 'CASCADE'});
 
 
 export default Evento;

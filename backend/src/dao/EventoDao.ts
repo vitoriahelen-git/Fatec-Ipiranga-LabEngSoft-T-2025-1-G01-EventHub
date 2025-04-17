@@ -1,10 +1,19 @@
 import { Transaction } from "sequelize";
 import Evento from "../models/Evento";
+import Usuario from "../models/Usuario";
 
 export default class EventoDao{
-    public cadastrarEvento = async (localEvento:string,horaInicio:Date,horaFim:Date,nomeEvento:string,dataEvento:Date,idTipoEvento:number,idUsuario:string, transaction: Transaction | null = null)=>{
+    public cadastrarEvento = async (descricaoEvento:String, imagemEvento:String|null, cepLocal:String, enderecoLocal:String, numeroLocal:String, complementoLocal:String, bairroLocal:String, cidadeLocal:String, ufLocal:String,horaInicio:Date,horaFim:Date,nomeEvento:string,dataEvento:Date,idTipoEvento:number,idUsuario:string, transaction: Transaction | null = null)=>{
        const evento: Evento = await Evento.create({
-            localEvento,
+            descricaoEvento,
+            imagemEvento,
+            cepLocal, 
+            enderecoLocal, 
+            numeroLocal, 
+            complementoLocal, 
+            bairroLocal, 
+            cidadeLocal, 
+            ufLocal,
             horaInicio,
             horaFim,
             nomeEvento,
@@ -15,7 +24,17 @@ export default class EventoDao{
         return evento;
     }
 
-    public listarEventos = async (idUsuario: string):Promise<Evento[]> =>{
+    public listarEventos = async (emailUsu: string):Promise<Evento[]> =>{
+        const usuario: Usuario | null = await Usuario.findOne({
+            where: {
+                emailUsu
+            }
+        });
+        if (!usuario) {
+            throw new Error("Usuário não encontrado");
+        }
+        const idUsuario = usuario?.codigoUsu;
+
         const eventos: Evento[] = await Evento.findAll({
             where: {
                 idUsuario
@@ -29,30 +48,56 @@ export default class EventoDao{
         return evento;
     }
 
-    public editarEvento = async (idEvento: string, localEvento: string, horaInicio: Date, horaFim: Date, nomeEvento: string, dataEvento: Date, idTipoEvento: number, idUsuario: string, transaction: Transaction | null = null): Promise<[number, Evento[]]> => {
-        const resultado = await Evento.update({
-            localEvento, 
-            horaInicio, 
-            horaFim, 
-            nomeEvento, 
-            dataEvento, 
-            idTipoEvento, 
-            idUsuario
-        }, {
-            where: { idEvento }, 
-            transaction,
-            returning: true 
-        }); 
-        return resultado; 
+    public editarEvento = async (  id: number,
+        dadosAtualizados: {
+            nomeEvento: string,
+            descricaoEvento: string,
+            tipoEvento : string,
+            dataEvento: string,
+            horaInicio: string,
+            horaFim: string,
+            cepLocal: string,
+            enderecoLocal: string,
+            numeroLocal: string,
+            complementoLocal: string,
+            bairroLocal: string,
+            cidadeLocal: string,
+            ufLocal: string,
+        }
+      ) => {
+        const evento = await Evento.findByPk(id);
+        
+      
+        if (!evento) {
+          return null;
+        }
+      
+        await evento.update({
+          nomeEvento: dadosAtualizados.nomeEvento,
+          descricaoEvento: dadosAtualizados.descricaoEvento,
+          tipoEvento: dadosAtualizados.tipoEvento,
+          dataEvento: dadosAtualizados.dataEvento,
+          horaInicio: dadosAtualizados.horaInicio,
+          horaFim: dadosAtualizados.horaFim,
+          cepLocal: dadosAtualizados.cepLocal,
+          enderecoLocal: dadosAtualizados.enderecoLocal,
+          numeroLocal: dadosAtualizados.numeroLocal,
+          complementoLocal: dadosAtualizados.complementoLocal,
+          bairroLocal: dadosAtualizados.bairroLocal,
+          cidadeLocal: dadosAtualizados.cidadeLocal,
+          ufLocal: dadosAtualizados.ufLocal,
+        });
+      
+        return evento;
     }
 
 
-    public deletarEvento = async (idUsuario:string) => {
+    public deletarEvento = async (idEvento: string) => {
         await Evento.destroy({
             where: {
-                idUsuario 
+                idEvento
             }
-        })
+        });
     }
 }
 
