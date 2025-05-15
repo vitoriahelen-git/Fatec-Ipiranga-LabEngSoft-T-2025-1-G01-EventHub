@@ -8,13 +8,16 @@ import RedefinirSenha from './paginas/RedefinirSenha/RedefinirSenha'
 import Erro404 from './paginas/Erro404/Erro404'
 import MeuPerfil from './paginas/MeuPerfil/MeuPerfil'
 import OrganizadorLayout from './componentes/OrganizadorLayout/OrganizadorLayout'
-import ProtecaoDeRota from './componentes/ProtecaoDeRota/ProtecaoDeRota'
+import ProtecaoDeRota from './paginas/ProtecaoDeRota'
 import MeusEventos from './paginas/MeusEventos/MeusEventos'
 import InformacoesMeusEventos from './paginas/InformacoesMeusEventos/InformacoesMeusEventos'
 import ConfirmarPresenca from './paginas/ConfirmarPresenca/ConfirmarPresenca'
 import Convidados from './paginas/Convidados/Convidados'
 import Convites from './paginas/Convites/Convites'
-
+import PrestadorLayout from './componentes/PrestadorLayout/PrestadorLayout'
+import MeusServicos from './paginas/MeusServicos/MeusServicos'
+import CadastroServico from './paginas/CadastroServico/CadastroServico'
+import InformacoesServico from './paginas/InformacoesServico/InformacoesServico'
 
 const App = () => {
   return (
@@ -28,13 +31,19 @@ const App = () => {
           <Route path='*' element={<Erro404 />}/>
         </Route>
         <Route element={<ProtecaoDeRota />}>
-          <Route element={<OrganizadorLayout />}>
+          <Route path='organizador' element={<OrganizadorLayout />}>
             <Route path='criar-evento' element={<CadastroEvento />}/>
             <Route path='meu-perfil' element={<MeuPerfil />}/>
             <Route path="meus-eventos" element={<MeusEventos />} />
             <Route path='meus-eventos/:idEvento/informacoes-meus-eventos' element={<InformacoesMeusEventos />}/>
             <Route path="meus-eventos/:idEvento/convidados" element={<Convidados/>} />
             <Route path="meus-eventos/:idEvento/convites" element={<Convites/>} />
+          </Route>
+          <Route path='prestador' element={<PrestadorLayout />}>
+            <Route path='meu-perfil' element={<MeuPerfil />}/>
+            <Route path='meus-servicos' element={<MeusServicos />}/>
+            <Route path='criar-servico' element={<CadastroServico />}/>
+            <Route path='meus-servicos/:idServico/informacoes-meus-servicos' element={<InformacoesServico />}/>
           </Route>
         </Route>
         <Route path='Confirmar-presenca/:idConvite' element={<ConfirmarPresenca/>}/>

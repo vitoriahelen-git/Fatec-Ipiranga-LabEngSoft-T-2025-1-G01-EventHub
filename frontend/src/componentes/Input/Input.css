@@ -57,12 +57,19 @@
 }
 
 .input:focus{
-    outline: solid var(--purple-700) 2px;
+    outline: solid var(--cor-principal) 2px;
     border-color: transparent;
 }
 
 .input::placeholder{
     font-family: var(--fonte-principal);
+}
+
+.input:disabled{
+    background-color: #F8F9FA;
+    color: rgba(33, 37, 41, 0.56);
+    border-color: #CED4DA;
+    cursor: not-allowed;
 }
 
 .icone-input{

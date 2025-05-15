@@ -1,14 +1,12 @@
-// import React from 'react'
+
 import './ConfirmarPresenca.css'
-// import logo from '../../assets/logo_eventhub_fonte_branca.png'
-// import imagemFundo from '../../assets/imagem_fundo.png'
-// import { div } from 'framer-motion/client'
+
 import Input from '../../componentes/Input/Input'
 import Botao from '../../componentes/Botao/Botao'
 import { data, useParams } from 'react-router';
 import { FormEvent, useEffect, useState } from 'react';
-import axios from 'axios';
 import { PatternFormat } from 'react-number-format';
+import api from '../../axios';
 
 const ConfirmarPresenca = () => {
     const { idConvite } = useParams();
@@ -20,6 +18,7 @@ const ConfirmarPresenca = () => {
 
     const [tituloEvento, setTituloEvento] = useState("")
     const [descricaoEvento, setDescricaoEvento] = useState("")
+    const [imagemEvento, setImagemEvento] = useState("")
     const [dataEvento, setDataEvento] = useState("")
     const [horaInicio, setHoraInicio] = useState("")
     const [horaFim, setHoraFim] = useState("")
@@ -37,13 +36,14 @@ const ConfirmarPresenca = () => {
         const buscarConvite = async () => {
           try {
             console.log ('idConvite', idConvite)
-            const response = await axios.get(`http://localhost:3000/users/convites/${idConvite}`)
+            const response = await api.get(`/users/convites/${idConvite}`)
 
             const evento = response.data
             console.log('evento', evento)
     
             setTituloEvento(evento.nomeEvento)
             setDescricaoEvento(evento.descricaoEvento)
+            setImagemEvento(evento.imagemEvento)
             setDataEvento(evento.dataEvento)
             setHoraInicio(evento.horaInicio)
             setHoraFim(evento.horaFim)
@@ -68,7 +68,7 @@ const ConfirmarPresenca = () => {
     const confirmarPresenca = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
-          await axios.post(`http://localhost:3000/users/confirmar-convite/${idConvite}`, {
+          await api.post(`/users/confirmar-convite/${idConvite}`, {
             nome,
             email,
             rg,
@@ -81,7 +81,6 @@ const ConfirmarPresenca = () => {
         }
       };
 
-
   return (
     <div className='container-convite'>
         <div className="imagem-fundo">
@@ -90,6 +89,10 @@ const ConfirmarPresenca = () => {
             </div>
         </div>
         <div className='convite__cards'>
+            <div>
+            <div>
+                <img className='confirmar-evento__imagem' src={`http://localhost:3000/files/${imagemEvento}`}/>
+            </div>
             <div className='informacoes-evento-convite'>
                 <div className='mensagem-titulo'>
                     <div className='mensagem'>Você foi convidado(a) para o evento</div>
@@ -125,6 +128,7 @@ const ConfirmarPresenca = () => {
                         <div className='texto-local-evento'> {enderecoLocal +', '+ numeroLocal + ', ' + cidadeLocal + ' - ' + ufLocal} </div>
                     </div>
                 </div>
+            </div>
             </div>
             <div className='campos-dados-convidado'>
                 <div className='inputs-dados-convidado'>

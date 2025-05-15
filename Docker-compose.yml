@@ -22,6 +22,7 @@ services:
     image: backend-eventhub-image
     container_name: backend-eventhub-container
     environment:
+      URL_BACKEND: http://localhost
       SERVER_PORT: "3000"
       DB_USER: root
       DB_PASSWORD: "123456"

@@ -6,4 +6,9 @@ export default class TipoEventoDao{
         const tipoEventos: TipoEvento[] = await TipoEvento.findAll();
         return tipoEventos;
     }
+
+    public buscarTipoEventoPorId = async (idTipoEvento: number): Promise<TipoEvento | null> => {
+        const tipoEvento: TipoEvento | null = await TipoEvento.findByPk(idTipoEvento);
+        return tipoEvento;
+    }
 }

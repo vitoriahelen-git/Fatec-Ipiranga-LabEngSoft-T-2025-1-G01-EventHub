@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import axios from "axios";
 import CabecalhoEvento from '../../componentes/CabecalhoEvento/CabecalhoEvento'
-import { jwtDecode } from "jwt-decode";
 import './Convidados.css';
 import Botao from "../../componentes/Botao/Botao";
 import { Modal } from "../../componentes/Modal/Modal";
-import Input from "../../componentes/Input/Input";
-import { desc } from "framer-motion/client";
+import api from "../../axios";
 
 
 
@@ -39,36 +36,38 @@ interface Evento{
     status: 'Confirmado' | 'Recusado' | 'Pendente';
   }
 
+
+
 const Convidados = () => {
     const { idEvento } = useParams();
     const [evento, setEvento] = useState<Evento | null>(null);
-    const [modoEdicaoEvento, setModoEdicaoEvento] = useState(false);
-    const [eventoEditado, setEventoEditado] = useState<Evento | null>(null);
-    const [modoApagarEvento, setModoApagarvento] = useState(false);
     const [convidados, setConvidados] = useState<Convidado[]>([]);
     const [modalConfirmarPresencas, setModalConfirmarPresencas] = useState(false);
     const [indiceConvidadoPendente, setIndiceConvidadoPendente] = useState(0);
     const [idUsuario, setIdUsuario] = useState<any>(null);
-
+    const [preView, setPreview] = useState('')
+    const [tipoEvento, setTipoEvento] = useState(0)
+    const [carregandoImprimir, setCarregandoImprimir] = useState(false);
 
     const convidadosPendentes = convidados.filter(convidado => convidado.status === 'Pendente');
     const convidadoPendenteAtual = convidadosPendentes[indiceConvidadoPendente];
 
+    const [botaoImprimirDesabilitado, setBotaoImprimirDesabilitado] = useState(true);
+
     useEffect(() => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('Token não encontrado no localStorage');
-            }
-            const emailDecodificado: {email:string} = jwtDecode(token);
-            axios.get(`http://localhost:3000/users/get-user/${emailDecodificado.email}`)
+            api.get(`/users/get-user`)
             .then((res) => {
                 setIdUsuario(res.data.idUsuario);
-                axios.get(`http://localhost:3000/users/${idUsuario}/events/${idEvento}`)
+                api.get(`/users/${idUsuario}/events/${idEvento}`)
                     .then((res) => {
                         setEvento(res.data);
-                        setEventoEditado(res.data);
                         const status = definirStatusEvento(res.data);
+                        setTipoEvento(res.data.idTipoEvento);
+                        const urlPreview = res.data.imagemEvento
+                        ? `http://localhost:3000/files/${res.data.imagemEvento}`
+                        : '';
+                        setPreview(urlPreview);
                         setEvento({ ...res.data, status });
                     })
                     .catch((err) => {
@@ -97,9 +96,10 @@ const Convidados = () => {
 
     const buscarConvidados = async (idEvento: string, setConvidados: Function) => {
         try {
-          const response = await axios.get(`http://localhost:3000/users/obter-convidados/${idEvento}`);
+          const response = await api.get(`/users/obter-convidados/${idEvento}`);
           setConvidados(response.data);
         } catch (error) {
+            setBotaoImprimirDesabilitado(true);
           console.error('Erro ao buscar convidados:', error);
         }
       };
@@ -109,16 +109,11 @@ const Convidados = () => {
     useEffect(() => {
         const ObterEventoeUsuario = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) throw new Error('Token não encontrado no localStorage');
-            
-                const { email }: { email: string } = jwtDecode(token);
-            
-                const res = await axios.get(`http://localhost:3000/users/get-user/${email}`);
+                const res = await api.get(`/users/get-user`);
                 setIdUsuario(res.data.codigoUsu);
 
             
-                const evento = await axios.get(`http://localhost:3000/users/${idUsuario}/events/${idEvento}`);
+                const evento = await api.get(`/users/${idUsuario}/events/${idEvento}`);
                 setEvento(evento.data);
     
                 if (idEvento) {
@@ -135,7 +130,7 @@ const Convidados = () => {
 
         const atualizarStatusConvidado = async (idConvidado: string, novoStatus: 'Confirmado' | 'Recusado') => {
             try {
-              await axios.put(`http://localhost:3000/users/atualizar-status-convidado/${idConvidado}`, {
+              await api.put(`/users/atualizar-status-convidado/${idConvidado}`, {
                 status: novoStatus
               });
 
@@ -156,52 +151,17 @@ const Convidados = () => {
               console.error('Erro ao atualizar status do convidado:', error);
             }
           };
+
+    useEffect(() => {
+    const confirmados = convidados.filter((convidado: Convidado) => convidado.status === 'Confirmado');
+    setBotaoImprimirDesabilitado(!(confirmados.length > 0));
+    }, [convidados]);
     
 
-    function guardarModo(setState: React.Dispatch<React.SetStateAction<boolean>>, valor: boolean) {
-        setState(valor);
-      }
 
       if (!evento) return <p>Carregando evento...</p>;
 
-      const AbrirModalApagarEvento = () => {
-        setModoApagarvento(!modoApagarEvento)
-    }
 
-    const AbrirModalEditarEvento = () => {
-        setEventoEditado(evento);
-       setModoEdicaoEvento(!modoEdicaoEvento)
-   }
-
-   const editarEvento = async () => {
-    if (!eventoEditado) return alert("Evento não carregado corretamente!");
-  
-    try {
-      await axios.put(`http://localhost:3000/users/events/${evento.idEvento}`, {
-        nomeEvento: eventoEditado.nomeEvento,
-        tipoEvento: eventoEditado.tipoEvento,
-        descricaoEvento: eventoEditado.descricaoEvento,
-        dataEvento: eventoEditado.dataEvento,
-        horaInicio: eventoEditado.horaInicio,
-        horaFim: eventoEditado.horaFim,
-        cepLocal: eventoEditado.cepLocal,
-        enderecoLocal: eventoEditado.enderecoLocal,
-        numeroLocal: eventoEditado.numeroLocal,
-        complementoLocal: eventoEditado.complementoLocal,
-        bairroLocal: eventoEditado.bairroLocal,
-        cidadeLocal: eventoEditado.cidadeLocal,
-        ufLocal: eventoEditado.ufLocal,
-      });
-  
-      alert("Evento atualizado com sucesso!");
-      AbrirModalEditarEvento();
-      window.location.href = '/meus-eventos';
-  
-    } catch (err) {
-      console.error("Erro ao editar evento:", err);
-      alert("Erro ao atualizar evento.");
-    }
-  };
 
   function definirStatusEvento(evento: Evento): string {
     const agora = new Date();
@@ -233,30 +193,39 @@ const Convidados = () => {
     }
 }
 
-    const ApagarEvento = () => {
-        axios.delete(`http://localhost:3000/users/${idUsuario}/events/${idEvento}`)
-            .then((res) => {
-                window.location.href = '/meus-eventos';
-            })
-            .catch((err) => {
-                console.error("Erro ao apagar evento", err);
-            });
-        setModoApagarvento(!modoApagarEvento)
+    const gerarListaConvidados = async () => {
+        try{
+            if(carregandoImprimir) return;
+            setCarregandoImprimir(true);
+            const {data: pdf} = await api.get(`/users/gerar-lista-convidados/${idEvento}`, {responseType: 'blob'});
+            const url = URL.createObjectURL(new Blob([pdf]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'lista_de_convidados.pdf';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            setCarregandoImprimir(false);
+        }
+        catch(e: any){
+            console.error('Erro ao gerar lista de convidados:', e);
+            setCarregandoImprimir(false);
+        }
     }
 
   return (
     <div className="tela-convidados-evento">
+        <div className="informacoes-evento__cabecalho">
             <CabecalhoEvento
-           idEvento={idEvento} 
-           EnviaModoEdicao={(valor: boolean) => guardarModo(setModoEdicaoEvento, valor)} 
-           EnviaModoApagar={(valor: boolean) => guardarModo(setModoApagarvento, valor)}
-           tituloEvento={evento.nomeEvento}
-           dataEvento={evento.dataEvento}
-           horaInicio={evento.horaInicio}
-           horaFim={evento.horaFim}
-           localEvento={evento.enderecoLocal +', '+ evento.numeroLocal + ', ' + evento.cidadeLocal + ' - ' + evento.ufLocal}
-
-        />
+                idEvento={idEvento} 
+                evento={evento}
+                preViewEv={preView}
+                setEvento={setEvento}
+                idUsuario={idUsuario}
+            />
+        </div>
+        <div className="informacoes-evento__container">
         <div className="conteudo-convidados">
             <div className="convidados">
                 <div className="titulo-convidados">Convidados</div>
@@ -271,6 +240,19 @@ const Convidados = () => {
                         </div>
                         <div className="confirmar-presencas">
                             <Botao funcao={() => setModalConfirmarPresencas(true)} texto='Confirmar Presenças'/>
+                        </div>
+                        <div className="imprimir-lista">
+                            <Botao 
+                                funcao={gerarListaConvidados} 
+                                texto={
+                                    carregandoImprimir ? 
+                                        <div className="spinner-border spinner-border-sm" role="status">
+                                            <span className="visually-hidden">Carregando...</span>
+                                        </div>
+                                    : 'Imprimir lista'
+                                }
+                                desabilitado={botaoImprimirDesabilitado}
+                            />
                         </div>
                     </div>
                     <table className="tabela-convidados">
@@ -371,175 +353,10 @@ const Convidados = () => {
                         </div>
                     </Modal>:
                     ''}
-                            { modoApagarEvento ?
-                            <Modal titulo='Apagar evento' textoBotao="Apagar" funcaoSalvar={ApagarEvento} enviaModal={AbrirModalApagarEvento}>
-                                <div className='modal-apagar-evento'>
-                                    <div className='texto-apagar-evento'>Você tem certeza que deseja apagar o evento "{evento.nomeEvento}"?</div>
-                                </div>
-                            </Modal>
-                            :
-                            ''
-                            }
-
-
-{
-                    modoEdicaoEvento ? 
-                    <Modal funcaoSalvar={editarEvento} titulo='Editar evento' enviaModal={AbrirModalEditarEvento}>
-                    <div className='modal-editar-evento'>
-                        <div className='campos-editar-evento'>
-                            <div className='nome-categoria-evento'>
-                                <div className='nome-input-evento'>
-                                    <div className='textos'>Nome do evento</div>
-                                    <div className="input-tamanho">
-                                        <Input value={eventoEditado?.nomeEvento || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, nomeEvento: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite um nome para o evento'/>
-                                    </div>                  
-                                </div>
-                                <div className='categoria-input-evento'>
-                                    <div className='textos'>Categoria</div>
-                                    <div className='input-tamanho'>   
-                                        <Input value={eventoEditado?.tipoEvento || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, tipoEvento: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite uma categoria para o Evento'/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className='descricao-input-evento'>
-                                <div>Descrição do evento(opciona)</div>
-                                <div className='input-tamanho-descricao'>
-                                <Input value={eventoEditado?.descricaoEvento || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                            prev ? { ...prev, descricaoEvento: e.target.value } : null
-                                            )
-                                } type='text' dica='Digite uma descrição para o seu evento...'/>
-                                </div>
-                            </div>
-                            <div className='imagem-evento'>
-                                <div className='imagem-evento-texto-botao'>
-                                    <div className='texto-imagem-evento'>Imagem do evento(opcional)</div>
-                                    <div className='input-imagem-evento'>
-                                        <div className='sem-imagem'></div>
-                                        <div className='botoes-imagem'>
-                                            <Botao texto='Selecionar arquivo'></Botao>
-                                            <Botao texto='Remover'></Botao>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className='novos-dados-eventos'>
-                            <div className='texto-input-data'>
-                                <div className='textos'>Data do evento</div>
-                                <div className='data-evento'>
-                                    <Input value={eventoEditado?.dataEvento || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, dataEvento: e.target.value } : null
-                                                    )
-                                        } type='date' dica='dd/mm/aaaa'/>
-                                </div>
-                            </div>
-                            <div className='texto-input-hora-inicio-evento'>
-                                <div className='horario-inicio-fim-evento'>
-                                    <div className='textos'>Hora ínicio do evento</div>
-                                    <div className='input-tamanho'>
-                                        <Input value={eventoEditado?.horaInicio || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, horaInicio: e.target.value } : null
-                                                    )
-                                        } type='text' dica='--:--'/>
-                                    </div>
-                                </div>
-                                <div className='horario-inicio-fim-evento'>
-                                    <div className='textos'>Hora fim do evento</div>
-                                    <div className='input-tamanho'>
-                                        <Input value={eventoEditado?.horaFim || ""}
-                                          onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, horaFim: e.target.value } : null
-                                                    )
-                                        } type='text' dica='--:--'/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className='texto-input-cep-endereco'>
-                                <div className='input-texto-cep-numero'>
-                                    <div className='textos'>CEP</div>
-                                    <div className='input-tamanho-cep-numero'>
-                                        <Input value={eventoEditado?.cepLocal || ""}
-                                          onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, cepLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite o CEP do local'/>
-                                    </div>
-                                </div>
-                                <div className='input-texto-endereco-complemento'>
-                                    <div className='textos'>Endereço</div>
-                                    <div className='input-tamanho-endereco-complemento'>
-                                        <Input value={eventoEditado?.enderecoLocal || ""}
-                                          onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, enderecoLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite o endereço do local'/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className='input-texto-numero-complemento'>
-                                <div className='input-texto-cep-numero'>
-                                    <div className='textos'>Número</div>
-                                    <div className='input-tamanho-cep-numero'>
-                                        <Input value={eventoEditado?.numeroLocal || ""} onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, numeroLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite o número do local'/>
-                                    </div>
-                                </div>
-                                <div className='input-texto-endereco-complemento'>
-                                    <div className='textos'>Complemento</div>
-                                    <div className='input-tamanho-endereco-complemento'>
-                                        <Input value={eventoEditado?.complementoLocal || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, complementoLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite o complemento'/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className='input-texto-bairro'>
-                                <div className='textos'>Bairro (opicional)</div>
-                                <div className='input-bairro'>
-                                    <Input value={eventoEditado?.bairroLocal || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, bairroLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite o bairro do local do evento'/>
-                                </div>
-                            </div>
-                            <div className='input-texto-cidade-uf'>
-                                <div className='input-cidade'>
-                                    <div className='textos'>Cidade (opicional)</div>
-                                    <div className='input-tamanho-cidade'>
-                                        <Input value={eventoEditado?.cidadeLocal || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, cidadeLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite a cidade do local'/>
-                                    </div>
-                                </div>
-                                <div className='input-uf'>
-                                    <div className='textos'>UF (opicional)</div>
-                                    <div className='input-tamanho-uf'>
-                                        <Input value={eventoEditado?.ufLocal || ""}  onChange={(e:any) => setEventoEditado((prev) =>
-                                                    prev ? { ...prev, ufLocal: e.target.value } : null
-                                                    )
-                                        } type='text' dica='Digite a UF'/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>  
-                    </div>
-                </Modal>
-                :
-                ''
-        }
                 </div>
             </div>
         </div>
+    </div>
 )
 }
 

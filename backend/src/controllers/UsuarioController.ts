@@ -7,6 +7,9 @@ import UsuarioTipoDao from "../dao/UsuarioTipoDao";
 import { compararSenha } from "../utils/criptografiaSenha";
 import enviarEmailRecuperacaoSenha from "../utils/enviaEmail";
 import { cnpj, cpf } from "cpf-cnpj-validator";
+import { AuthenticatedRequest } from "../types/AuthenticatedRequest";
+import { deletarImagemServidor } from "../utils/deletarImagemServidor";
+import UsuarioTipo from "../models/UsuarioTipo";
 
 export default class UsuarioController {
     private usuarioDao = new UsuarioDao();
@@ -89,9 +92,21 @@ export default class UsuarioController {
                 res.status(401).json({mensagem: "senha inválida"});
                 return;
             }
+
+            const tipoUsuario: UsuarioTipo[] = await this.usuarioTipoDao.buscarUsuarioTipoPorId(usuario.codigoUsu);
+            const tipo: string[] = [];
+
+            tipoUsuario.map(({dataValues}) => {
+                if(dataValues.idTipo === 1){
+                    tipo.push('organizador');
+                }
+                if(dataValues.idTipo === 2){
+                    tipo.push('prestador');
+                }
+            });
         
             const token = jwt.sign(
-                {email},
+                {id: usuario.codigoUsu, email, tipo},
                 process.env.JWT_SECRET_LOGIN!,
                 {expiresIn: "1h"}
             );
@@ -163,6 +178,10 @@ export default class UsuarioController {
         }
     }
 
+    public autenticarUsuario = async (req: Request, res: Response) => {
+        res.status(200).json({mensagem: "Usuário autenticado com sucesso!"});
+    }
+
     public validarCpf = async (req: Request, res: Response) => {
         try{
             const { cpfUsu } = req.body;
@@ -219,9 +238,9 @@ export default class UsuarioController {
         }
     }
 
-    public buscarUsuarioPorEmail = async (req: Request, res: Response) => {
+    public buscarUsuarioPorEmail = async (req: AuthenticatedRequest, res: Response) => {
         try{
-            const emailUsu = req.params.emailUsu;
+            const emailUsu = req.user!.email;
             const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(emailUsu);
             if(!usuario){
                 res.status(404).json({mensagem: "Usuário não encontrado"});
@@ -236,10 +255,10 @@ export default class UsuarioController {
         }
     }
 
-    public deletarUsuario = async (req: Request, res: Response) => {
+    public deletarUsuario = async (req: AuthenticatedRequest, res: Response) => {
         const transaction = await sequelize.transaction();
         try{
-            const emailUsu = req.params.emailUsu;
+            const emailUsu = req.user!.email;
             const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(emailUsu, transaction);
             if(!usuario){
                 res.status(404).json({mensagem: "Usuário não encontrado"});
@@ -256,11 +275,11 @@ export default class UsuarioController {
         }
     }
 
-    public atualizarUsuario = async (req: Request, res: Response) => {
+    public atualizarUsuario = async (req: AuthenticatedRequest, res: Response) => {
         const transaction = await sequelize.transaction();
         try{
-            let { nomeUsu, sobrenomeUsu, dtNasUsu, telUsu, cpfUsu, nomeEmpresa, telEmpresa, cnpjEmpresa, localizacaoEmpresa, senhaAtual, novaSenha, confirmarSenha  } = req.body;
-            const email = req.params.emailUsu;
+            let { nomeUsu, sobrenomeUsu, dtNasUsu, telUsu, cpfUsu, nomeEmpresa, telEmpresa, cnpjEmpresa, localizacaoEmpresa, senhaAtual, novaSenha, confirmarSenha, prestador, organizador  } = req.body;
+            const email = req.user!.email;
             const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(email, transaction);
             if(!usuario){
                 res.status(404).json({mensagem: "Usuário não encontrado"});
@@ -287,7 +306,7 @@ export default class UsuarioController {
             }
             usuario.nomeUsu = nomeUsu;
             usuario.sobrenomeUsu = sobrenomeUsu;
-            usuario.dt_nasUsu = dtNasUsu;
+            usuario.dtNasUsu = dtNasUsu;
             usuario.telUsu = telUsu;
             usuario.cpfUsu = cpfUsu;
             usuario.nomeEmpresa = nomeEmpresa;
@@ -295,13 +314,92 @@ export default class UsuarioController {
             usuario.cnpjEmpresa = cnpjEmpresa;
             usuario.localizacaoEmpresa = localizacaoEmpresa;
             await this.usuarioDao.atualizarUsuario(usuario, transaction);
+            if(organizador){
+                await this.usuarioTipoDao.cadastrarUsuarioTipo(usuario.codigoUsu, 1, transaction);
+            }
+            if(prestador){
+                await this.usuarioTipoDao.cadastrarUsuarioTipo(usuario.codigoUsu, 2, transaction);
+            }
+            let resposta: any = { mensagem: "Usuário atualizado com sucesso" };
+
+            if (organizador || prestador) {
+                const novosTipos: UsuarioTipo[] = await this.usuarioTipoDao.buscarUsuarioTipoPorId(usuario.codigoUsu, transaction);
+                const tipo: string[] = [];
+                novosTipos.map(({dataValues}) => {
+                        if(dataValues.idTipo === 1){
+                            tipo.push('organizador');
+                        }
+                        if(dataValues.idTipo === 2){
+                            tipo.push('prestador');
+                        }
+                    });
+                const novoToken = jwt.sign(
+                {id: usuario.codigoUsu, email, tipo},
+                process.env.JWT_SECRET_LOGIN!,
+                {expiresIn: "1h"}
+            );
+                resposta.token = novoToken;
+            }
+
             await transaction.commit();
-            res.status(200).json({mensagem: "Usuário atualizado com sucesso"});
+            res.status(200).json(resposta);
         }
         catch(error){
             await transaction.rollback();
             console.error('Erro ao atualizar usuario', error);
             res.status(500).json({mensagem: "Erro ao atualizar usuário"});
+        }
+    }
+
+    public alterarFotoUsuario = async (req: AuthenticatedRequest, res: Response) => {
+        const transaction = await sequelize.transaction();
+        try{
+            const emailUsu = req.user!.email;
+            console.log(emailUsu)
+            const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(emailUsu, transaction);
+            if(!usuario){
+                res.status(404).json({mensagem: "Usuário não encontrado"});
+                return;
+            }
+            if(usuario.fotoUsu){
+                deletarImagemServidor(usuario.fotoUsu)
+            }
+            usuario.fotoUsu = req.file?.filename || null;
+            await this.usuarioDao.atualizarUsuario(usuario, transaction);
+            console.log('Usuário após salvar:', usuario);
+            await transaction.commit();
+            res.status(200).json({mensagem: "Foto do usuário atualizada com sucesso"});
+        }
+        catch(error){
+            await transaction.rollback();
+            console.error('Erro ao atualizar foto do usuario', error);
+            res.status(500).json({mensagem: "Erro ao atualizar foto do usuário"});
+        }
+    }
+
+    public alterarFotoPrestador = async (req: AuthenticatedRequest, res: Response) => {
+        const transaction = await sequelize.transaction();
+        try{
+            const emailUsu = req.user!.email;
+            console.log(emailUsu)
+            const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(emailUsu, transaction);
+            if(!usuario){
+                res.status(404).json({mensagem: "Usuário não encontrado"});
+                return;
+            }
+            if(usuario.fotoEmpresa){
+                deletarImagemServidor(usuario.fotoEmpresa)
+            }
+            usuario.fotoEmpresa = req.file?.filename || null;
+            await this.usuarioDao.atualizarUsuario(usuario, transaction);
+            console.log('Usuário após salvar:', usuario);
+            await transaction.commit();
+            res.status(200).json({mensagem: "Foto da Empresa atualizada com sucesso"});
+        }
+        catch(error){
+            await transaction.rollback();
+            console.error('Erro ao atualizar foto do usuario', error);
+            res.status(500).json({mensagem: "Erro ao atualizar foto do usuário"});
         }
     }
 }

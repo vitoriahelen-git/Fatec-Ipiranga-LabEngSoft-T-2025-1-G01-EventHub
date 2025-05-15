@@ -94,7 +94,7 @@ export default class ConviteDao {
     const evento = await Evento.findOne({
       where: { idEvento },
       attributes: [
-        'idEvento', 'nomeEvento', 'descricaoEvento', 'dataEvento', 'horaInicio', 'horaFim',   
+        'idEvento', 'nomeEvento', 'descricaoEvento', 'imagemEvento', 'dataEvento', 'horaInicio', 'horaFim',   
         'cepLocal', 'enderecoLocal', 'numeroLocal', 'complementoLocal',
         'bairroLocal', 'cidadeLocal', 'ufLocal'
       ]

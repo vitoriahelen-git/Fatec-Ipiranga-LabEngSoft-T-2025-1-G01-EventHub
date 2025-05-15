@@ -41,6 +41,12 @@ const inicializarComDados = async () => {
         "Lançamento", "Palestra", "Reunião", "Seminário", "Show", "Treinamento", "Workshop"
     ];
 
+    const tiposDeServicos = [
+        "Alimentação", "Audiovisual", "Decoração", "Fotografia", "Locação de Espaço", 
+        "Música", "Segurança", "Transporte", "Iluminação", "Limpeza", "Recepção",
+        "Sonorização", "Buffet", "Cerimonial", "Coquetel", "DJ", "Espaço para Eventos"
+    ];
+
     tiposDeUsuario.map(async (tipo, index) => {
         await sequelize.models.Tipo.findOrCreate({
             where:{
@@ -60,6 +66,17 @@ const inicializarComDados = async () => {
             }, 
             defaults:{
                 descricaoTipoEvento: tipo
+            }
+        });
+    });
+
+    tiposDeServicos.map(async (tipo, index) => {
+        await sequelize.models.TipoServico.findOrCreate({
+            where:{
+                idTipoServico: index + 1
+            }, 
+            defaults:{
+                descricaoTipoServico: tipo
             }
         });
     });

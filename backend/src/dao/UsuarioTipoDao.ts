@@ -9,4 +9,14 @@ export default class UsuarioTipoDao{
         }, transaction ? {transaction} : {});
         return usuarioTipo;
     }
+
+    public async buscarUsuarioTipoPorId(idUsu: string, transaction: Transaction | null = null){
+        const usuarioTipo: UsuarioTipo[] | null = await UsuarioTipo.findAll({
+            where: {
+                idUsu
+            },
+            transaction
+        })
+        return usuarioTipo;
+    }
 }

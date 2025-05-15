@@ -34,6 +34,7 @@
     "multer": "^1.4.5-lts.2",
     "mysql2": "^3.11.5",
     "nodemailer": "^6.9.16",
+    "puppeteer": "^24.8.2",
     "sequelize": "^6.37.5"
   }
 }

@@ -1,6 +1,5 @@
 .conteudo-convidados{
     display: flex;
-    padding: 32px;
     flex-direction: column;
     align-items: flex-start;
     gap: 40px;
@@ -61,6 +60,10 @@
 
   .botao-confirmar-presencas{
     width: 200px;
+  }
+
+  .imprimir-lista{
+    width: 139px;
   }
 
   .tabela-convidados {

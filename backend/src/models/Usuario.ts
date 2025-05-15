@@ -8,12 +8,12 @@ class Usuario extends Model{
     declare senhaUsu: string;
     declare nomeUsu: string;
     declare sobrenomeUsu: string;
-    declare fotoUsu: Buffer;
-    declare dt_nasUsu: Date;
+    declare fotoUsu: string | null;
+    declare dtNasUsu: Date;
     declare telUsu: string;
     declare cpfUsu: string;
     declare nomeEmpresa: string;
-    declare fotoEmpresa: Buffer;
+    declare fotoEmpresa: string | null;
     declare telEmpresa: string;
     declare cnpjEmpresa: string;
     declare localizacaoEmpresa: string;
@@ -46,7 +46,7 @@ Usuario.init({
         allowNull: true
     },
     fotoUsu: { 
-        type: DataTypes.BLOB, 
+        type: DataTypes.STRING, 
         allowNull: true 
     },
     dtNasUsu: { 
@@ -67,7 +67,7 @@ Usuario.init({
         allowNull: true
     },
     fotoEmpresa: { 
-        type: DataTypes.BLOB, 
+        type: DataTypes.STRING, 
         allowNull:true
     },
     telEmpresa: { 

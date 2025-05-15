@@ -1,10 +1,14 @@
 import { Request, Response } from "express";
 import EventoDao from "../dao/EventoDao";
 import fs from "fs";
+import { AuthenticatedRequest } from "../types/AuthenticatedRequest";
+import { deletarImagemServidor } from "../utils/deletarImagemServidor";
+import TipoEventoDao from "../dao/TipoEventoDao";
 
 export default class EventoController {
 
     private eventoDao = new EventoDao();
+    private tipoEventoDao = new TipoEventoDao();
 
     public cadastrarEvento = async (req: Request, res: Response) =>{
         try{
@@ -29,9 +33,9 @@ export default class EventoController {
         }
     }
 
-    public listarEventos = async (req: Request, res: Response) =>{
+    public listarEventos = async (req: AuthenticatedRequest, res: Response) =>{
         try{
-            const { emailUsu } = req.params;
+            const emailUsu = req.user!.email;
             const eventos = await this.eventoDao.listarEventos( emailUsu );
             if (eventos.length === 0){
                 const mensagem = "Nenhum evento encontrado";
@@ -55,7 +59,8 @@ export default class EventoController {
                 res.status(404).json({mensagem});
                 return;
             }
-            res.status(200).json(evento);
+            const tipoEvento = await this.tipoEventoDao.buscarTipoEventoPorId(evento.dataValues.idTipoEvento);
+            res.status(200).json({...evento.dataValues, tipoEvento: tipoEvento?.dataValues});
         }
         catch(error){
             console.error('Erro ao buscar evento', error);
@@ -65,12 +70,12 @@ export default class EventoController {
 
     public editarEvento = async (req: Request, res: Response) =>{
         const { idEvento } = req.params;
-    
+
 
         const {
             nomeEvento,
             descricaoEvento,
-            tipoEvento,
+            idTipoEvento,
             dataEvento,
             horaInicio,
             horaFim,
@@ -81,13 +86,19 @@ export default class EventoController {
             bairroLocal,
             cidadeLocal,
             ufLocal,
+            imagemEditada,
         } = req.body;
+
+        let imagemEvento = req.file?.filename || null
+
+
+        
       
         try {
           const eventoAtualizado = await this.eventoDao.editarEvento(Number(idEvento), {
             nomeEvento,
             descricaoEvento,
-            tipoEvento,
+            idTipoEvento,
             dataEvento,
             horaInicio,
             horaFim,
@@ -98,7 +109,10 @@ export default class EventoController {
             bairroLocal,
             cidadeLocal,
             ufLocal,
+            imagemEvento,
+            imagemEditada: imagemEditada === 'true' ? true : false,
           });
+
       
           if (!eventoAtualizado) {
             return res.status(404).json({ message: 'Evento não encontrado' });
@@ -118,7 +132,16 @@ export default class EventoController {
     public deletarEvento = async (req: Request, res: Response) => {
         try{
             const { idEvento } = req.params; 
-        
+            const evento = await this.eventoDao.buscarEventoporId(idEvento)
+            if (!evento){
+                const mensagem = "Evento não encontrado";
+                res.status(404).json({mensagem});
+                return;
+            }
+            else{
+                if(evento.dataValues.imagemEvento)
+                deletarImagemServidor(evento.dataValues.imagemEvento)
+            }
             await this.eventoDao.deletarEvento(idEvento)
             res.status(200).json({mensagem: "Evento deletado com sucesso"});
         }
