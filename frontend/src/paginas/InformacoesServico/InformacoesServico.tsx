@@ -11,6 +11,7 @@ interface Servico{
     descricaoServico: string;
     unidadeCobranca: string;
     valorServico: number;
+    valorServicoPromo: number | null;
     qntMinima: number;
     qntMaxima: number;
     imagem1: string;
@@ -20,6 +21,9 @@ interface Servico{
     imagem5?: string;
     imagem6?: string;
     tipoServico: TipoServico;
+    anunciado: boolean;
+    dataInicioAnuncio: string | null;
+    dataFimAnuncio: string | null;
 }
 
 interface TipoServico {
@@ -77,6 +81,7 @@ const InformacoesServico = () => {
                     preViewSv={preView}
                     setServico={setServico}
                     idUsuario={idUsuario}
+                    setPreviewSv={setPreview}
                 />
             </div>
             <div className='informacoes-servico__container'>

@@ -4,12 +4,11 @@ import Evento from './Evento';
 
 
 class Convite extends Model {
-  public idConvite!: number;
-  public idEvento!: number;
-  public idConvidado!: number;
-  public linkConvite!: string;
-  public dataConvite!: Date;
-  public status!: string;
+    declare idConvite: number;
+    declare idEvento: number;
+    declare dataConvite: Date;
+    declare status: string;
+    declare qtdMaxAcompanhantes: number;
 }
 
 Convite.init({
@@ -28,24 +27,17 @@ Convite.init({
         },
         field: 'id_evento', 
     },
-    idConvidado: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-            model: 'CONVIDADO',
-            key: 'id_convidado'
-        },
-    },
-    linkConvite: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
     dataConvite: {
         type: DataTypes.DATEONLY,
         allowNull: false
     },
     status: {
         type: DataTypes.STRING,
+        allowNull: false
+    },
+    qtdMaxAcompanhantes: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
         allowNull: false
     }
 }, {

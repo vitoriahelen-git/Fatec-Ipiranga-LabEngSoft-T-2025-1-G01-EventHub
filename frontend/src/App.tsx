@@ -18,6 +18,11 @@ import PrestadorLayout from './componentes/PrestadorLayout/PrestadorLayout'
 import MeusServicos from './paginas/MeusServicos/MeusServicos'
 import CadastroServico from './paginas/CadastroServico/CadastroServico'
 import InformacoesServico from './paginas/InformacoesServico/InformacoesServico'
+import CarrinhoDeCompras from './paginas/CarrinhoDeCompras/CarrinhoDeCompras'
+import Pedidos from './paginas/Pedidos/Pedidos'
+import Marketplace from './paginas/Marketplace/Marketplace'
+import InformacoesPedido from './paginas/InformacoesPedido/InformacoesPedido'
+import ServicoMarketplace from './paginas/ServicoMarketplace/ServicoMarketplace'
 
 const App = () => {
   return (
@@ -38,6 +43,13 @@ const App = () => {
             <Route path='meus-eventos/:idEvento/informacoes-meus-eventos' element={<InformacoesMeusEventos />}/>
             <Route path="meus-eventos/:idEvento/convidados" element={<Convidados/>} />
             <Route path="meus-eventos/:idEvento/convites" element={<Convites/>} />
+            <Route path='pedidos' element={<Pedidos />}/>
+            <Route path='pedidos/:idPedido/informacoes-pedido' element={<InformacoesPedido />}/>
+          </Route>
+          <Route path='marketplace' element={<OrganizadorLayout />}>
+            <Route index element={<Marketplace />}/>
+            <Route path='servico/:idServico' element={<ServicoMarketplace />}/>
+            <Route path='carrinho' element={<CarrinhoDeCompras />}/>
           </Route>
           <Route path='prestador' element={<PrestadorLayout />}>
             <Route path='meu-perfil' element={<MeuPerfil />}/>

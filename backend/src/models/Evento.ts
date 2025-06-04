@@ -13,6 +13,7 @@ class Evento extends Model{
     declare dataEvento: Date;
     declare idTipo: number;
     declare idUsuario: string;
+    declare qtdMaxAcompanhantes: number;
 }
 
 Evento.init(
@@ -96,6 +97,11 @@ Evento.init(
                 key:'codigo_usu'
             }
         },
+        qtdMaxAcompanhantes:{
+            type:DataTypes.INTEGER,
+            defaultValue: 0,
+            allowNull:false
+        }
     },{
         sequelize,
         modelName:'Evento',

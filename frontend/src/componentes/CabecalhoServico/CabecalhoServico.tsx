@@ -1,6 +1,6 @@
 import './CabecalhoServico.css'
 import Botao from '../../componentes/Botao/Botao'
-import { NavLink, useNavigate } from 'react-router'
+import { data, NavLink, useNavigate } from 'react-router'
 import { Modal } from '../Modal/Modal'
 import Input from '../Input/Input'
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
@@ -9,6 +9,10 @@ import Select from '../../componentes/Select/Select';
 import ErroCampoForm from '../../componentes/ErroCampoForm/ErroCampoForm';
 import sweetAlert from 'sweetalert2'
 import Alerta from '../Alerta/Alerta'
+import ToggleBotao from '../ToggleBotao/ToggleBotao'    
+import InputRadio from '../InputRadio/InputRadio'
+import ToolTip from '../ToolTip/ToolTip'
+
 
 interface TipoServico {
   idTipoServico: string;
@@ -20,28 +24,117 @@ interface Unidade{
   nome: string;
 }
 
-const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario}: any) => {
+const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario, setPreviewSv}: any) => {
   const [abrirEdicaoServico, setAbrirEdicaoServico] = useState(false)
   const [abrirApagarServico, setAbrirApagarServico] = useState(false)
   const [servicoEditado, setServicoEditado] = useState({...servico, tipoServico: servico.idTipoServico})
   const [erros, setErros] = useState<{ [key: string]: string }>({});
   const [tipoServicoDisponiveis, setTipoServicoDisponiveis] = useState<TipoServico[]>([])
-  const inputImagemref = useRef<HTMLInputElement>(null)
-  const [imagemServico, setImagemServico] = useState<[File|null]>([null])
-  const [preView, setPreview] = useState(preViewSv)
-  const [imagemEditada, setImagemEditada] = useState(false)
+  const inputImagemRef = useRef<HTMLInputElement>(null)
+  const [imagemServico, setImagemServico] = useState<File[]>([])
+  const [preView, setPreview] = useState(preViewSv.filter((imagem: string)=> imagem !== null))
   const [editadoOk, setEditadoOk] = useState(false);
   const [unidade, setUnidade] = useState('')
+  const [opcaoSelecionada, setOpcaoSelecionada] = useState('indefinida');
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const [dataInicioAnuncio, setDataInicioAnuncio] = useState<Date | null>(hoje);
+  const [dataTerminoAnuncio, setDataTerminoAnuncio] = useState<Date | null>(null);
+  const diferencaDatas = dataTerminoAnuncio && dataInicioAnuncio ? Math.max(
+                      Math.ceil(
+                        (dataTerminoAnuncio.getTime() - dataInicioAnuncio.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      ),
+                      0
+                    )
+                  : 0;
+  const dataFormatada =
+    dataInicioAnuncio &&
+    !isNaN(dataInicioAnuncio.getTime()) &&
+    new Date(dataInicioAnuncio).setHours(0, 0, 0, 0) === hoje.getTime()
+      ? 'hoje'
+      : dataInicioAnuncio
+      ? `${dataInicioAnuncio.toLocaleDateString('pt-BR')}`
+      : '';
 
+  const [modalAnunciarServico, setModalAnunciarServico] = useState(false);
+  const [erroDataInicio, setErroDataInicio] = useState<string | null>(null);
+  const [erroDataTermino, setErroDataTermino] = useState<string | null>(null);
+
+  const AbrirModalAnunciarServico = () => {
+    setModalAnunciarServico(!modalAnunciarServico);
+  }
+  const [anunciado, setAnunciado] = useState(servico.anunciado || false); 
+  const [imagemOriginal, setImagemOriginal] = useState<string[]>(preViewSv.filter((imagem: string) => imagem !== null));
   const navigate = useNavigate();
-  
+  const maxImagemServico = 6;
   const AbrirModalEditarServico = () => {
     setServicoEditado({...servico, tipoServico: servico.tipoServico.idTipoServico});
+    setPreview(preViewSv.filter((imagem: string)=> imagem !== null))
     setAbrirEdicaoServico(!abrirEdicaoServico)
   }
 
   const AbrirModalApagarServico = () => {
     setAbrirApagarServico(!abrirApagarServico)
+  }
+
+  const anunciarServico = async () => {
+        if (!await validarAnuncio()) return;
+        console.log(idServico);
+        api.put(`users/services/${idServico}/anunciar`, {
+            dataInicioAnuncio: dataInicioAnuncio,
+            dataTerminoAnuncio: dataTerminoAnuncio
+        })
+        .then((res) => {
+            console.log("Serviço anunciado com sucesso", res.data);
+        })
+        .catch((err) => {
+            console.error("Erro ao anunciar serviço", err);
+        });
+        AbrirModalAnunciarServico();
+        setAnunciado(true);
+    }
+
+    const encerrarAnuncioServico = async () => {
+        api.put(`users/services/${idServico}/encerrar-anuncio`)
+        .then((res) => {
+            console.log("Anúncio encerrado com sucesso", res.data);
+        })
+        .catch((err) => {
+            console.error("Erro ao encerrar anúncio", err);
+        });
+        setAnunciado(false);
+    }
+
+    const anunciarOuEncerrar = async () => {
+      anunciado ?
+      encerrarAnuncioServico() :
+      setModalAnunciarServico(!modalAnunciarServico)}
+
+  const validarAnuncio = async () => {
+    let valido = true;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    if (!dataInicioAnuncio || dataInicioAnuncio < hoje) {
+      setErroDataInicio('A data de início não pode ser anterior a hoje.');
+      valido = false;
+    } else {
+      setErroDataInicio(null);
+    }
+
+    if (dataTerminoAnuncio) {
+      if (dataTerminoAnuncio < dataInicioAnuncio!) {
+        setErroDataTermino('A data de término não pode ser anterior à data de início.');
+        valido = false;
+      } else {
+        setErroDataTermino(null);
+      }
+    } else {
+      setErroDataTermino(null);
+    }
+
+    return valido;
   }
 
 
@@ -61,7 +154,15 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario}
     return Object.keys(novosErros).length === 0;
   };
 
+  useEffect(() => {
+    setPreview(preViewSv.filter((imagem: string) => imagem !== null));
+  },[preViewSv])
 
+  useEffect(()=>{
+    setPreview(()=> [...imagemOriginal, ...imagemServico.map((imagem: File) => URL.createObjectURL(imagem))])
+    console.log('imagens antigas: ', imagemOriginal.length);
+    console.log('imagens novas: ', imagemServico.length);
+  },[imagemServico,imagemOriginal])
   
   useEffect(()=>{
     const buscarTiposDeServicos = async () => {
@@ -87,6 +188,8 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario}
     }
   }, [servico]);
 
+  
+
   const editarServico = async () => {
     if (!await validarFormulario()) return;
     if (!servicoEditado) return alert("Serviço não carregado corretamente!");    
@@ -100,19 +203,16 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario}
       formData.append("qntMinima", servicoEditado.qntMinima);
       formData.append("qntMaxima", servicoEditado.qntMaxima);
       formData.append("valorServico", servicoEditado.valorServico);
+      formData.append("valorPromoServico", servicoEditado.valorPromoServico);
+      imagemOriginal.map((imagem: string) => {
+        const imagemSemLink = imagem.split('/')
+        formData.append("imagensMantidas", imagemSemLink[imagemSemLink.length - 1]);
+      })
+      imagemServico.map((imagem: File)=>{
+        formData.append("files", imagem);
+      })
 
-    //   if (imagemEditada) {
-    //     if (imagemEvento) {
-    //       formData.append("file", imagemEvento);
-    //       formData.append("imagemEditada", "true");
-    //     } else if (imagemEvento === null) {
-    //       formData.append("imagemEditada", "true");
-    //     }
-    //   } else {
-    //     formData.append("imagemEditada", "false");
-    //   }
-
-      await api.put(`/users/services/${servico.idServico}`, formData, {
+      const {data} = await api.put(`/users/services/${servico.idServico}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });    
       setEditadoOk(true);
@@ -131,6 +231,8 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario}
         },
         imagemServico: imagemServico instanceof File ? URL.createObjectURL(imagemServico) : servico.imagemServico,
       })
+      const imagens = [data.servico.imagem1, data.servico.imagem2, data.servico.imagem3, data.servico.imagem4, data.servico.imagem5, data.servico.imagem6];
+      setPreviewSv(imagens.map((imagem) => imagem !== null ? `http://localhost:3000/files/${imagem}` : null));
     } 
     catch (err) {
       console.error("Erro ao editar Servico:", err);
@@ -192,24 +294,29 @@ const unidadeValor: Unidade[] = [
               </div>
             </div>
           </div>
-          <div className="botoes-evento">
-              <div className='botao-evento'>
-                <Botao
-                  texto="Editar serviço"
-                  tamanho="med"
-                  tipo="botao"
-                  cor='var(--yellow-700)'
-                  funcao={() => setAbrirEdicaoServico(true)}
-                />
+            <div className="botoes-servico">
+              <div className='botoes-evento_container'>
+                <div className='botao-evento'>
+                  <Botao
+                    texto="Editar serviço"
+                    tamanho="med"
+                    tipo="botao"
+                    cor='var(--yellow-700)'
+                    funcao={() => setAbrirEdicaoServico(true)}
+                  />
+                </div>
+                <div className='botao-evento'>
+                  <Botao
+                    texto="Apagar serviço"
+                    tamanho="med"
+                    tipo="botao"
+                    cor='var(--yellow-700)'
+                    funcao={() => setAbrirApagarServico(true)}
+                  />
+                </div>
               </div>
-              <div className='botao-evento'>
-                <Botao
-                  texto="Apagar serviço"
-                  tamanho="med"
-                  tipo="botao"
-                  cor='var(--yellow-700)'
-                  funcao={() => setAbrirApagarServico(true)}
-                />
+              <div className='botao-evento__anunciado'>
+                <ToggleBotao   ativo={anunciado} aoAlternar={() => anunciarOuEncerrar()} texto = "Anunciado"/>
               </div>
             </div>
         </div>
@@ -223,8 +330,90 @@ const unidadeValor: Unidade[] = [
         </div>
       </div>
       {
+        modalAnunciarServico ?
+        <Modal titulo='Anunciar Serviço' prestador textoBotao="Anunciar" funcaoSalvar={anunciarServico} enviaModal={AbrirModalAnunciarServico}>
+        <div className='modal-anunciar-servico'>
+          <div className='modal-anunciar-servico__input-data'>
+            <Input 
+              cabecalho = {true}
+              cabecalhoTexto='Data de início'
+              tipo = 'date'
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                if (e.target.value !== '') {
+                  const [ano, mes, dia] = e.target.value.split('-').map(Number);
+                  const dataLocal = new Date(ano, mes - 1, dia); 
+                  setDataInicioAnuncio(dataLocal);
+                } else {
+                  setDataInicioAnuncio(null);
+                }
+              }}
+              valor={
+                dataInicioAnuncio ? dataInicioAnuncio.toISOString().split('T')[0] : ''
+              }
+              min={hoje.toISOString().split('T')[0]}
+              >
+            </Input>
+                {erroDataInicio && <ErroCampoForm mensagem={erroDataInicio}/>
+                }
+          </div>
+          <div className='modal-anunciar-servico__duracao'>
+            <div className='modal-anunciar-servico__titulo-duracao'>
+              Duração
+              <ToolTip prestador mensagem='Você pode desativar este anúncio manualmente a qualquer momento. Caso defina uma data de término, o anúncio será encerrado automaticamente ao início desse dia, sem necessidade de ação manual.'/>
+            </div>
+            <div className='teste'>
+              <InputRadio
+                nome = 'duracao'
+                id = '1'
+                textoLabel = 'Data de termino indefinida'
+                value='indefinida'
+                funcao={(e:any) => {setOpcaoSelecionada(e.target.value); setDataTerminoAnuncio(null)}}
+                prestador>
+              </InputRadio>  
+            </div>
+            <InputRadio
+              nome = 'duracao'
+              id = '2'
+              textoLabel = 'Determinar uma data de término'
+              value='determinar'
+              funcao={(e:any) => setOpcaoSelecionada(e.target.value)}
+              prestador>
+            </InputRadio>
+          </div>
+          {
+            opcaoSelecionada === 'determinar' ?
+            <>
+              <div className='modal-anunciar-servico__input-data'>
+                <Input 
+                  cabecalho = {true}
+                  cabecalhoTexto='Data de término'
+                  tipo = 'date'
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    if (e.target.value !== '') {
+                      const [ano, mes, dia] = e.target.value.split('-').map(Number);
+                      const dataLocal = new Date(ano, mes - 1, dia);
+                      setDataTerminoAnuncio(dataLocal);
+                    } else {
+                      setDataTerminoAnuncio(null);
+                    } 
+                  }}>
+                </Input>
+                {erroDataTermino && <ErroCampoForm mensagem={erroDataTermino}/>
+                }
+              </div>
+              <div>
+                Exibição por {diferencaDatas} dias a partir de {dataFormatada}.
+              </div>
+            </>
+           : '' 
+           }
+          </div>
+      </Modal>
+      : ''
+      }
+      {
         abrirEdicaoServico ? 
-          <Modal funcaoSalvar={editarServico} titulo='Editar serviço' enviaModal={AbrirModalEditarServico}>
+          <Modal funcaoSalvar={editarServico} titulo='Editar serviço' enviaModal={AbrirModalEditarServico} prestador>
             <div className='modal-editar-evento'>
               <div className='campos-editar-evento'>
                 <div className='nome-categoria-evento'>
@@ -232,6 +421,7 @@ const unidadeValor: Unidade[] = [
                     <div className='textos'>Nome do serviço</div>
                     <div className="input-tamanho">
                       <Input 
+                        cor='var(--yellow-700)'
                         value={servicoEditado?.nomeServico|| ""}  
                         onChange={(e:any) => setServicoEditado((prev:any) =>
                            prev ? { ...prev, nomeServico: e.target.value } : null
@@ -248,6 +438,7 @@ const unidadeValor: Unidade[] = [
                         cabecalho 
                         cabecalhoTexto='Tipo de Servico'  
                         textoPadrao='Selecione o tipo de servico'
+                        cor='var(--yellow-700)'
                         valor={servicoEditado?.tipoServico}
                         funcao={(e: ChangeEvent<HTMLSelectElement>) => setServicoEditado((prev:any) => prev ? { ...prev, tipoServico: e.target.value } : null)}
                         required={true}
@@ -262,6 +453,7 @@ const unidadeValor: Unidade[] = [
                   <div>Descrição do servico(Opcional)</div>
                   <div className='input-tamanho-descricao'>
                     <Input 
+                      cor='var(--yellow-700)'
                       value={servicoEditado?.descricaoServico || ""}  
                       onChange={(e:any) => setServicoEditado((prev:any) =>
                       prev ? { ...prev, descricaoServico: e.target.value } : null
@@ -272,82 +464,92 @@ const unidadeValor: Unidade[] = [
                     {erros.descricaoServico && <ErroCampoForm mensagem={erros.descricaoServico}/>} 
                   </div>
                 </div>
-                {/* <div className='imagem-evento'>
-                  <div className='imagem-evento-texto-botao'>
-                    <div className='texto-imagem-evento'>Imagem do servico(Opcional)</div>
-                    <div className='input-imagem-evento'>
-                      <div className='cadastro-evento__container-imagem'>
-                        <input 
-                          type='file' 
-                          className='cadastro-evento__input_imagem'
-                          accept='image/*'
-                          ref={ inputImagemref }
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                              setImagemServico(e.target.files[0])
-                              setPreview(URL.createObjectURL(e.target.files[0]))
-                              setImagemEditada(true)
-                            }
-                            else {
-                              setImagemServico(null)
-                              setPreview('')
-                            }
-                          }}
-                        />
-                        {preView?<img src={preView} className='cadastro-evento__imagem'/>:<div className='cadastro-evento__sem-imagem'> <i className='fa-solid fa-image cadastro-evento__sem-imagem-icone'/></div>}
-                      </div>
-                      <div className='botoes-imagem'>
-                        <Botao 
-                          tamanho='min' 
-                          texto='Selecionar arquivo' 
-                          funcao={()=>inputImagemref.current?.click()}
-                        />
-                        <Botao 
-                          tamanho='min' 
-                          texto='Remover' 
-                          funcao={()=>{
-                            setImagemServico(null)
-                            URL.revokeObjectURL(preView)
-                            setPreview('')
-                            setImagemEditada(true)
-                            console.log('imagemEditada', imagemEditada)
-                            if(inputImagemref.current)
-                              inputImagemref.current.value = ""
-                          }}
-                        />
-                      </div>
+                <div className='d-flex row g-4 justify-content-center cadastro-servico__etapa-imagem-com-imagem'>
+                  <input
+                  style={{ display: 'none' }}
+                  ref={inputImagemRef} 
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    if(e.target.files && e.target.files.length + preView.length <= maxImagemServico) {
+                    setImagemServico((prevState:File[])=> [...prevState, ...Array.from(e.target.files || [])]);
+                    // inputImagemRef.current!.value = '';
+                    return
+                    }
+                    console.log('limite de imagens atingido',  preView.length + e.target.files!.length);
+                  }}
+                  />
+                  {preView ? preView.map((imagem: string, index:number)=>{
+                    if (preView[index] !== null)
+                    return <div className="col-12 col-sm-6 cadastro-servico__container-imagem">
+                      <img key={imagem} src={imagem} alt="imagem do serviço" className="cadastro-servico__imagem-preview"/>
+                      <button className='cadastro-servico__remover-image' type="button" onClick={()=>{
+                        inputImagemRef.current!.value = ''
+                        setImagemOriginal((prevState: string[]) => prevState.filter((_, i) => i !== index));
+                        setImagemServico((prevState: File[]) => prevState.filter((_, i) => imagemOriginal.length + i !== index));
+                        }}>
+                        <i className="fa-solid fa-xmark cadastro-servico__remover-image-icone"></i>
+                      </button>
                     </div>
-                  </div>
-                </div> */}
+                  })
+                  :''}
+                  {preView.length < maxImagemServico ? 
+                  <button 
+                  type="button"
+                  onClick={()=>{inputImagemRef.current?.click()}}
+                  className="col-12 col-sm-6 cadastro-servico__adicionar-imagem">
+                    <div className="cadastro-servico__adicionar-imagem-info">
+                      <div><i className="fa-solid fa-plus cadastro-servico__adicionar-imagem-icone"></i></div>
+                      <div>Adicionar mais imagens</div>
+                    </div>
+                  </button>:''}
+                </div>    
               </div>
               <div className='novos-dados-eventos'>
-                <div className='texto-input-hora-inicio-evento'>
-                  <div className='texto-input-data'>
-                    <div className='textos'>Unidade de cobrança</div>
-                    <div className='input-tamanho'>
-                      <Select 
-                        textoPadrao = 'Selecione a Unidade'
-                        esconderValorPadrao
-                        value={servicoEditado?.unidadeCobranca || ""}
-                        onChange={(e:any) => setServicoEditado((prev:any) =>
-                          prev ? { ...prev, unidadeCobranca: e.target.value } : null
-                        )}>
-                        {unidadeValor.map((unidade)=>{
-                        return <option id={unidade.id.toString()} value={unidade.id}>{unidade.nome}</option>
-                        })}
-                      </Select>
-                      {erros.unidadeCobranca && <ErroCampoForm mensagem={erros.unidadeCobranca}/>}
-                    </div>
+                <div className='texto-input-data' style={{width: '100%'}}>
+                  <div className='textos'>Unidade de cobrança</div>
+                  <div className='input-tamanho' style={{width: '100%'}}>
+                    <Select 
+                      textoPadrao = 'Selecione a Unidade'
+                      esconderValorPadrao
+                      cor='var(--yellow-700)'
+                      value={servicoEditado?.unidadeCobranca || ""}
+                      onChange={(e:any) => setServicoEditado((prev:any) =>
+                        prev ? { ...prev, unidadeCobranca: e.target.value } : null
+                      )}>
+                      {unidadeValor.map((unidade)=>{
+                      return <option id={unidade.id.toString()} value={unidade.id}>{unidade.nome}</option>
+                      })}
+                    </Select>
+                    {erros.unidadeCobranca && <ErroCampoForm mensagem={erros.unidadeCobranca}/>}
                   </div>
+                </div>
+                <div className='texto-input-hora-inicio-evento'>
                   <div className='horario-inicio-fim-evento'>
                     <div className='textos'>Valor do serviço por unidade</div>
                     <div className='input-tamanho'>
                       <Input 
+                        cor='var(--yellow-700)'
                         value={servicoEditado?.valorServico || ""}  
                         onChange={(e:any) => setServicoEditado((prev:any) =>
                           prev ? { ...prev, valorServico: e.target.value } : null
                         )} 
                         dica='R$'
+                      />
+                      {erros.valorServico && <ErroCampoForm mensagem={erros.valorServico}/>}
+                    </div>
+                  </div>
+                  <div className='horario-inicio-fim-evento'>
+                    <div className='textos'>Valor promocional do serviço por unidade</div>
+                    <div className='input-tamanho'>
+                      <Input 
+                        cor='var(--yellow-700)'
+                        value={servicoEditado?.valorPromoServico || ""}  
+                        onChange={(e:any) => setServicoEditado((prev:any) =>
+                          prev ? { ...prev, valorPromoServico: e.target.value } : null
+                        )} 
+                        dica='Digite um valor promocional'
                       />
                       {erros.valorServico && <ErroCampoForm mensagem={erros.valorServico}/>}
                     </div>
@@ -358,6 +560,7 @@ const unidadeValor: Unidade[] = [
                     <div className='textos'>Quantidade mínima</div>
                     <div className='input-tamanho'>
                       <Input 
+                        cor='var(--yellow-700)'
                         value={servicoEditado?.qntMinima || ""}
                         onChange={(e:any) => setServicoEditado((prev:any) =>
                           prev ? { ...prev, qntMinima: e.target.value } : null
@@ -372,6 +575,7 @@ const unidadeValor: Unidade[] = [
                       <div className='textos'>Quantidade máxima</div>
                       <div className='input-tamanho'>
                           <Input 
+                              cor='var(--yellow-700)'
                               value={servicoEditado?.qntMaxima || ""}
                               onChange={(e:any) => setServicoEditado((prev:any) =>
                               prev ? { ...prev, qntMaxima: e.target.value } : null
@@ -390,7 +594,7 @@ const unidadeValor: Unidade[] = [
       }
       { 
         abrirApagarServico ?
-          <Modal titulo='Apagar Serviço' textoBotao="Apagar" funcaoSalvar={ApagarServico} enviaModal={AbrirModalApagarServico}>
+          <Modal titulo='Apagar Serviço' textoBotao="Apagar" funcaoSalvar={ApagarServico} enviaModal={AbrirModalApagarServico} prestador>
             <div className='modal-apagar-evento'>
               <div className='texto-apagar-evento'>Você tem certeza que deseja apagar o serviço "{servico.nomeServico}"?</div>
             </div>
@@ -400,7 +604,7 @@ const unidadeValor: Unidade[] = [
       {
         editadoOk &&
         <div className='editar-evento__alerta'>
-          <Alerta texto="Evento editado com sucesso!" status="sucesso" ativado={true}/>
+          <Alerta texto="Serviço editado com sucesso!" status="sucesso" ativado={true}/>
         </div>
       }
     </div>

@@ -21,6 +21,7 @@ route.delete('/delete-user', validarTokenAutenticacao, usuarioController.deletar
 route.put('/update-user', validarTokenAutenticacao, usuarioController.atualizarUsuario);
 route.put('/update-image', validarTokenAutenticacao, upload.single('file'), usuarioController.alterarFotoUsuario);
 route.put('/update-image-empresa', validarTokenAutenticacao, upload.single('file'), usuarioController.alterarFotoPrestador);
+route.get('/get-user/:idUsu', validarTokenAutenticacao, usuarioController.buscarUsuarioPorId);
 
 export default route;
 

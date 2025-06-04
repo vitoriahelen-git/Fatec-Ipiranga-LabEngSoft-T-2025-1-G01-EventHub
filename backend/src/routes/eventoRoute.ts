@@ -14,5 +14,8 @@ route.put('/events/:idEvento', validarTokenAutenticacao, upload.single("file"), 
     await eventoController.editarEvento(req, res);
 });
 route.delete('/:idUsuario/events/:idEvento', validarTokenAutenticacao, eventoController.deletarEvento);
+route.put('/events/:idEvento/atualizar-acompanhantes', validarTokenAutenticacao, async (req, res) => {
+    await eventoController.atualizarQtdMaxAcompanhantes(req,res);
+});
 
 export default route;

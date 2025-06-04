@@ -104,5 +104,14 @@ export default class EventoDao{
             }
         });
     }
+
+    public atualizarQtdMaxAcompanhantes = async (idEvento:string , qtdMaxAcompanhantes: number, transaction: Transaction | null = null) => {
+        const evento = await Evento.findByPk(idEvento);
+        if (!evento) {
+          return null;
+        }
+        await evento.update({ qtdMaxAcompanhantes }, { transaction });
+        return evento;
+    }
 }
 

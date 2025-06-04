@@ -150,4 +150,24 @@ export default class EventoController {
             res.status(500).json({ mensagem: "Erro ao deletar evento" });
         }
     }
+
+    public atualizarQtdMaxAcompanhantes = async (req: Request, res: Response) => {
+        try {
+            const { idEvento } = req.params;
+            const { qtdMaxAcompanhantes } = req.body;
+            const evento = await this.eventoDao.buscarEventoporId(idEvento);
+            if (!evento) {
+                return res.status(404).json({ message: 'Evento não encontrado' });
+            }
+            if (qtdMaxAcompanhantes < 0 || qtdMaxAcompanhantes > 99) {
+                return res.status(400).json({ message: 'A quantidade máxima de acompanhantes deve ser entre 0 a 99' });
+            }
+            const eventoAtualizado = await this.eventoDao.atualizarQtdMaxAcompanhantes(idEvento, qtdMaxAcompanhantes);
+            return res.status(200).json({ mensagem: 'Quantidade máxima de acompanhantes atualizada com sucesso', evento: eventoAtualizado });
+
+        } catch (error) {
+            console.error('Erro ao atualizar quantidade máxima de acompanhantes:', error);
+            return res.status(500).json({ message: 'Erro interno ao atualizar quantidade máxima de acompanhantes' });
+        }
+    }
 }

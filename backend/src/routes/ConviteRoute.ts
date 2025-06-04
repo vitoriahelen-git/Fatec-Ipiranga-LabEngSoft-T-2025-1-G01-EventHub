@@ -22,6 +22,7 @@ route.get('/convites/:idConvite', conviteController.buscarEventoPorConvite);
 
 route.post("/confirmar-convite/:idConvite", conviteController.confirmarConvite); 
 
+route.get('/verificar-convite/:idConvite', conviteController.verificarConvite);
 
 
 

@@ -178,7 +178,13 @@ export default class UsuarioController {
         }
     }
 
-    public autenticarUsuario = async (req: Request, res: Response) => {
+    public autenticarUsuario = async (req: AuthenticatedRequest, res: Response) => {
+        const email = req.user!.email;
+        const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorEmail(email);
+        if(!usuario){
+            res.status(401).json({mensagem: "Usuário não autenticado"});
+            return;
+        }
         res.status(200).json({mensagem: "Usuário autenticado com sucesso!"});
     }
 
@@ -252,6 +258,23 @@ export default class UsuarioController {
         catch(error){
             console.error('Erro ao buscar usuario por email', error);
             res.status(500).json({mensagem: "Erro ao buscar usuário por email"});
+        }
+    }
+
+    public buscarUsuarioPorId = async (req: Request, res: Response) => {
+        try{
+            const { idUsu } = req.params;
+            console.log('ID do usuário:', idUsu);
+            const usuario: Usuario | null = await this.usuarioDao.buscarUsuarioPorId(idUsu);
+            if(!usuario){
+                res.status(404).json({mensagem: "Usuário não encontrado"});
+                return;
+            }
+            res.status(200).json(usuario);
+        }
+        catch(error){
+            console.error('Erro ao buscar usuario por id', error);
+            res.status(404).json({mensagem: "Erro ao buscar usuário por id"});
         }
     }
 

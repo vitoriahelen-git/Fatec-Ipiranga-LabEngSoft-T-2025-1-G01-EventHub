@@ -26,6 +26,10 @@ export default class UsuarioDao{
         return await usuario.save(transaction ? {transaction} : {});
     }
 
+    buscarUsuarioPorId(idUsu: string, transaction: Transaction | null = null){
+        return Usuario.findByPk(idUsu, transaction ? {transaction} : {});
+    }
+
     public async buscarUsuarioPorEmail(emailUsu: string, transaction: Transaction | null = null){
         const usuario: Usuario | null = await Usuario.findOne({
             where: {

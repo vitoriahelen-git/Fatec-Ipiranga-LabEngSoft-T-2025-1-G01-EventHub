@@ -46,7 +46,9 @@ const CadastroServico = () => {
   })
 
   const [aviso, setAviso] = useState<Avisos>({
-    limiteImagem:{status:false, mensagem:'Limite de 6 imagens atingido'}
+    limiteImagem:{status:false, mensagem:'Limite de 6 imagens atingido'},
+    valorServico:{status:false, mensagem:'Valor do serviço deve ser maior que 0'},
+    qntMinima:{status:false, mensagem:'Quantidade mínima deve ser maior que 0'}
   })
 
   const [qntFixa, setQntFixa] = useState(false)
@@ -107,7 +109,7 @@ const CadastroServico = () => {
   const instrucao = [
     {
       titulo:'Detalhes do Serviço',
-      texto:'Preencha os campos com os detalhes do serviço que você deseja criar.',
+      texto:'Preencha os campos com os detalhes do serviço que você deseja criar. Um serviço pode representar tanto a prestação de um serviço tradicional — como DJ, buffet, fotografia, segurança, decoração, etc. — quanto a entrega de um produto físico relacionado ao evento, como lembrancinhas, arranjos florais, bolos ou doces e salgados personalizados.',
       campos: [
         <Input
         cabecalho
@@ -204,7 +206,7 @@ const CadastroServico = () => {
           setValorServico(values.floatValue || 0);
         }}
         cabecalho
-        cabecalhoTexto='Valor do Serviço'
+        cabecalhoTexto='Preço do Serviço (Por Unidade Escolhida)'
         dica='Digite o valor do Serviço'
         cor='#F3C623'
         />,
@@ -284,10 +286,10 @@ const CadastroServico = () => {
         {erro.imagemObrigatoria.status ? <ErroCampoForm mensagem={erro.imagemObrigatoria.mensagem} /> : ''}
     </div>
     :
-    <div className='d-flex row g-3 justify-content-center cadastro-servico__etapa-imagem-com-imagem'>
+    <div className='d-flex row g-4 justify-content-center cadastro-servico__etapa-imagem-com-imagem'>
        {
        imagemPreview.map((preView,index)=>{
-        return <div className="col-6 col-lg-4 cadastro-servico__container-imagem">
+        return <div className="col-12 col-sm-6 cadastro-servico__container-imagem">
           <img key={preView} src={preView} alt="imagem do serviço" className="cadastro-servico__imagem-preview"/>
           <button className='cadastro-servico__remover-image' type="button" onClick={()=>{
             inputImagemRef.current!.value = ''
@@ -303,7 +305,7 @@ const CadastroServico = () => {
       <button 
       type="button"
       onClick={()=>{inputImagemRef.current?.click()}}
-      className="col-6 col-lg-4 cadastro-servico__adicionar-imagem">
+      className="col-12 col-sm-6 cadastro-servico__adicionar-imagem">
         <div className="cadastro-servico__adicionar-imagem-info">
           <div><i className="fa-solid fa-plus cadastro-servico__adicionar-imagem-icone"></i></div>
           <div>Adicionar mais imagens</div>
@@ -376,13 +378,21 @@ const CadastroServico = () => {
       setPassoAtual(passoAtual+1)
     }
     else{
+      if(valorServico <= 0){
+        setAviso(prevState=>({...prevState, valorServico:{...prevState.valorServico,status:true}}))
+        return
+      }
+      if(qntMinima <= 0){
+        setAviso(prevState=>({...prevState, qntMinima:{...prevState.qntMinima,status:true}}))
+        return
+      }
       CadastroServico()
     }
   }
 
   return (
     <div className="cadastro-servico">
-      <h1>Criar serviço</h1>
+      <h1 className="layout-titulo">Criar serviço</h1>
       <form onSubmit={onSubimit} className="cadastro-servico__formulario" encType="multipart/form-data">
         <IndicadorDePassos qntPassos = {qntPassos} passoAtual={passoAtual+1} cor = '#F3C623'/>
         <Instrucao texto={instrucao[passoAtual].texto} titulo={instrucao[passoAtual].titulo} cor='#FFB22C'/>
@@ -408,7 +418,8 @@ const CadastroServico = () => {
         </div>
       </form>
       { aviso.limiteImagem.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.limiteImagem.status} status='aviso' texto={aviso.limiteImagem.mensagem}/> </div>: ''}
-      
+      { aviso.valorServico.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.valorServico.status} status='aviso' texto={aviso.valorServico.mensagem}/> </div>: ''}
+      { aviso.qntMinima.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.qntMinima.status} status='aviso' texto={aviso.qntMinima.mensagem}/> </div>: ''}
     </div>
   )
 }

@@ -11,6 +11,7 @@ class Servico extends Model{
     declare descricaoServico: string;
     declare unidadeCobranca: string;
     declare valorServico: number;
+    declare valorPromoServico: number | null;
     declare qntMinima: number;
     declare qntMaxima: number;
     declare imagem1: string;
@@ -19,6 +20,9 @@ class Servico extends Model{
     declare imagem4: string;
     declare imagem5: string;
     declare imagem6: string;
+    declare anunciado: boolean;
+    declare dataInicioAnuncio: Date | null;
+    declare dataFimAnuncio: Date | null;
 }
 
 Servico.init(
@@ -44,6 +48,11 @@ Servico.init(
         valorServico:{
             type:DataTypes.DECIMAL(9,2),
             allowNull:false
+        },
+        valorPromoServico:{
+            type:DataTypes.DECIMAL(9,2),
+            allowNull:true,
+            defaultValue: null
         },
         qntMinima:{
             type:DataTypes.INTEGER,
@@ -92,6 +101,19 @@ Servico.init(
                 model:Usuario,
                 key:'codigo_usu'
             }
+        },
+        anunciado:{
+            type:DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull:true
+        },
+        dataInicioAnuncio:{
+            type:DataTypes.DATE,
+            allowNull:true
+        },
+        dataFimAnuncio:{
+            type:DataTypes.DATE,
+            allowNull:true
         }
     },{
         sequelize,
@@ -104,5 +126,8 @@ Servico.init(
 
 Usuario.hasMany(Servico,{foreignKey:'idUsuario',   onDelete: 'CASCADE'});
 TipoServico.hasMany(Servico,{foreignKey:'idTipoServico', onDelete:'CASCADE'});
+
+Servico.belongsTo(Usuario, { foreignKey: 'idUsuario', as: 'usuario' });
+Servico.belongsTo(TipoServico, { foreignKey: 'idTipoServico', as: 'tipoServico' });
 
 export default Servico;
