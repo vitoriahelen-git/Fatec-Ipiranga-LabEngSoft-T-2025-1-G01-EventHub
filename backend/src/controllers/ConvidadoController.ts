@@ -22,6 +22,21 @@ export default class ConvidadoController {
     }
   };
 
+  public buscarStatusConvidadoPorConvite = async (req: Request, res: Response) => {
+    const { idConvite } = req.params;
+    try {
+      const convidado = await this.convidadoDao.buscarConvidadoPorConvite(idConvite);
+      if (!convidado) {
+        return res.status(404).json({ mensagem: 'Convidado não encontrado.' });
+      }
+      res.status(200).json({status: convidado.status});
+    } 
+    catch (error) {
+      console.error('Erro ao buscar convidado por convite:', error);
+      res.status(500).json({ mensagem: 'Erro interno ao buscar convidado.' });
+    }
+  }
+
   public atualizarStatusConvidadoController = async (req: Request, res: Response) => {
     const { idConvidado } = req.params;
     const { status } = req.body; 

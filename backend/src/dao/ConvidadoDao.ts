@@ -66,6 +66,40 @@ export default class ConvidadoDao {
     }));
   };
 
+  public buscarConvidadoPorConvite = async (idConvite: string) => {
+    const convidados = await Convidado.findAll({
+      include: [
+        {
+          model: Convite,
+          as: 'convite',
+          where: {
+            idConvite
+          }
+        },
+        {
+          model: Convidado,
+          as: 'acompanhantes',
+          through: {
+            attributes: ['relacionamento'],
+          },
+          attributes: ['idConvidado', 'nome', 'email', 'rg', 'dataNascimento', 'status'],
+        }
+      ],
+    });
+
+    const idsAcompanhantes: string[] = [];
+
+    for(const convidado of convidados) {
+      for(const acompanhante of convidado.acompanhantes || []) {
+        idsAcompanhantes.push(acompanhante.idConvidado);
+      }
+    }
+
+    const convidadoPrincipal = convidados.find((convidado) => !idsAcompanhantes.includes(convidado.idConvidado));
+
+    return convidadoPrincipal || null;
+  }
+
   public atualizarStatusConvidadoDAO = async (idConvidado: string, status: string) => {
     try {
       const convidado = await Convidado.findByPk(idConvidado, {

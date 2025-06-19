@@ -10,7 +10,7 @@ export default class ServicoController{
 
     public cadastrarServico = async (req:AuthenticatedRequest, res:Response)=>{
         try{
-            const {nomeServico, idTipoServico, descricaoServico, valorServico, unidadeCobranca, qntMinima, qntMaxima} = req.body
+            const {nomeServico, idTipoServico, descricaoServico, valorServico, unidadeCobranca, qntMinima, qntMaxima,servicoCep,servicoEndereco, servicoNumero,servicoComplemento,servicoBairro,servicoCidade,servicoEstado} = req.body
             const idUsuario = req.user!.id.toString()
             const imagens = req.files as Express.Multer.File[]
             const imagem1 = imagens[0].filename
@@ -19,7 +19,7 @@ export default class ServicoController{
             const imagem4 = imagens[3] ? imagens[3].filename : null
             const imagem5 = imagens[4] ? imagens[4].filename : null
             const imagem6 = imagens[5] ? imagens[5].filename : null
-            await this.servicoDao.cadastrarServico(idUsuario, idTipoServico, nomeServico, descricaoServico, unidadeCobranca, valorServico, qntMinima, qntMaxima, imagem1, imagem2, imagem3, imagem4, imagem5, imagem6)
+            await this.servicoDao.cadastrarServico(idUsuario, idTipoServico, nomeServico, descricaoServico, unidadeCobranca, valorServico, qntMinima, qntMaxima, imagem1, imagem2, imagem3, imagem4, imagem5, imagem6,servicoCep,servicoEndereco, servicoNumero,servicoComplemento,servicoBairro,servicoCidade,servicoEstado);
             res.status(201).json({ message: 'Serviço cadastrado com sucesso!'});
         }
         catch(error){
@@ -86,6 +86,13 @@ export default class ServicoController{
                 qntMinima,
                 qntMaxima,
                 imagensMantidas,
+                servicoCep,
+                servicoEndereco,
+                servicoNumero,
+                servicoComplemento,
+                servicoBairro,
+                servicoCidade,
+                servicoEstado
             } = req.body;
 
             let imagensMantidasLista = imagensMantidas
@@ -133,7 +140,14 @@ export default class ServicoController{
             imagem3,
             imagem4,
             imagem5,
-            imagem6
+            imagem6,
+            servicoCep,
+            servicoEndereco,
+            servicoNumero,
+            servicoComplemento,
+            servicoBairro,
+            servicoCidade,
+            servicoEstado
           });
 
       

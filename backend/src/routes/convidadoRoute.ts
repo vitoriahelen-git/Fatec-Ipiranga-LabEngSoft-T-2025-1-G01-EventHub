@@ -7,8 +7,11 @@ const route = express.Router();
 const convidadoController = new ConvidadoController();
 
 route.get('/obter-convidados/:idEvento', validarTokenAutenticacao, async (req, res) => {
-    await convidadoController.obterConvidados(req, res);
-  });
+  await convidadoController.obterConvidados(req, res);
+});
+route.get('/buscar-status-convidado/:idConvite', async (req, res) => {
+  await convidadoController.buscarStatusConvidadoPorConvite(req, res);
+});
 route.put('/atualizar-status-convidado/:idConvidado', validarTokenAutenticacao, convidadoController.atualizarStatusConvidadoController);
 route.get('/gerar-lista-convidados/:idEvento', validarTokenAutenticacao, async(req, res) => {
   await convidadoController.gerarListaConvidados(req, res);

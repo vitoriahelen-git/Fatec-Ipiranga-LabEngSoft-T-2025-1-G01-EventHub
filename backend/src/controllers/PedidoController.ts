@@ -6,14 +6,14 @@ export default class PedidoController {
 
     public finalizarPedido = async (req: AuthenticatedRequest, res: any) => {
         try {
-            const { idEvento, itens } = req.body;
+            const { idEvento, localEntrega, dataEntrega, itens } = req.body;
             const codigoUsu = req.user!.id.toString();
 
             if (!Array.isArray(itens) || itens.length === 0) {
                 return res.status(400).json({ mensagem: "Nenhum item informado" });
             }
 
-            const novoPedido = await this.pedidoDao.finalizarPedido(codigoUsu, Number(idEvento), itens);
+            const novoPedido = await this.pedidoDao.finalizarPedido(codigoUsu, Number(idEvento), localEntrega, dataEntrega, itens);
             res.status(201).json(novoPedido);
         } catch (error) {
             console.error("Erro ao criar pedido:", error);
@@ -62,4 +62,31 @@ export default class PedidoController {
         }
     }
 
+    public listarPedidosPrestador = async (req: any, res: any) => {
+        try {
+            const codigoUsu = req.user!.id.toString();
+            const pedidos = await this.pedidoDao.listarPedidosPrestador(codigoUsu);
+            res.status(200).json(pedidos);
+        } catch (error) {
+            console.error("Erro ao listar pedidos do prestador:", error);
+            res.status(500).json({ mensagem: "Erro interno ao listar pedidos do prestador" });
+        }
+    }
+
+
+    public listarItensPedidoPrestador = async (req: any, res: any) => {
+        const { idPedido } = req.params;
+        const codigoUsu = req.user!.id.toString();
+
+        try {
+            const pedidoItens = await this.pedidoDao.listarItensPedidoPrestador(Number(idPedido), codigoUsu);
+            if (!pedidoItens.itens || pedidoItens.itens.length === 0) {
+                return res.status(200).json({ mensagem: "Nenhum item encontrado para este pedido" });
+            }
+            res.status(200).json(pedidoItens);
+        } catch (error) {
+            console.error("Erro ao listar itens do pedido:", error);
+            res.status(500).json({ mensagem: "Erro interno ao listar itens do pedido" });
+        }
+    }
 }

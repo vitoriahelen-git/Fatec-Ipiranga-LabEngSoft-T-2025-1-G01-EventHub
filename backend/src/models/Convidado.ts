@@ -58,21 +58,23 @@ Convidado.init({
   underscored: true
 });
 
-Convidado.belongsTo(Convite, { foreignKey: 'idConvite', as: 'convite' });
-Convite.hasMany(Convidado, { foreignKey: 'idConvite', as: 'convidados' });
+Convidado.belongsTo(Convite, { foreignKey: 'idConvite', as: 'convite', onDelete: 'CASCADE' });
+Convite.hasMany(Convidado, { foreignKey: 'idConvite', as: 'convidados', onDelete: 'CASCADE' });
 
 Convidado.belongsToMany(Convidado, {
   through: Acompanhante,
   as: 'acompanhantes',             
   foreignKey: 'idConvidado',
-  otherKey: 'idAcompanhante'
+  otherKey: 'idAcompanhante',
+  onDelete: 'CASCADE'
 });
 
 Convidado.belongsToMany(Convidado, {
   through: Acompanhante,
   as: 'convidador',                
   foreignKey: 'idAcompanhante',
-  otherKey: 'idConvidado'
+  otherKey: 'idConvidado',
+  onDelete: 'CASCADE'
 });
 
 export default Convidado;

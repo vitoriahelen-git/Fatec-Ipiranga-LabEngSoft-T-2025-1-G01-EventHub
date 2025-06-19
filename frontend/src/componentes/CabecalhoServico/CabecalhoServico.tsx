@@ -11,7 +11,10 @@ import sweetAlert from 'sweetalert2'
 import Alerta from '../Alerta/Alerta'
 import ToggleBotao from '../ToggleBotao/ToggleBotao'    
 import InputRadio from '../InputRadio/InputRadio'
-import ToolTip from '../ToolTip/ToolTip'
+import TextArea from '../TextArea/TextArea'
+import Seta from '../Seta/Seta'
+import { PatternFormat } from 'react-number-format';
+import axios from 'axios'
 
 
 interface TipoServico {
@@ -60,6 +63,8 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario,
   const [modalAnunciarServico, setModalAnunciarServico] = useState(false);
   const [erroDataInicio, setErroDataInicio] = useState<string | null>(null);
   const [erroDataTermino, setErroDataTermino] = useState<string | null>(null);
+  const [erroCepInvalido, setErroCepInvalido] = useState(false);
+  const [travado,setTravado] = useState(false);
 
   const AbrirModalAnunciarServico = () => {
     setModalAnunciarServico(!modalAnunciarServico);
@@ -154,14 +159,51 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario,
     return Object.keys(novosErros).length === 0;
   };
 
+  const buscarCep = async (cep: string) => {
+    try { await axios.get(`https://viacep.com.br/ws/${cep}/json/`).then(res => {
+      const local = res.data
+      if(local.erro) 
+        // setAviso(prevState => ({...prevState, cepNaoEncontrado:{...prevState.cepNaoEncontrado, status: true}}))
+      console.log(local.erro)
+      else {
+      setServicoEditado({...servicoEditado, endereco: local.logradouro, bairro: local.bairro, cidade: local.localidade, estado: local.uf})
+      setTravado(true)
+      setErroCepInvalido(false)
+      }
+    })}
+    catch (error) { console.log('ocorreu algum erro: ',error) }
+  }
+
+  useEffect(() => {
+    if(servicoEditado.cep?.length===8) 
+      buscarCep(servicoEditado.cep)
+    if(servicoEditado.cep?.length===0) 
+      setErroCepInvalido(false)
+    else
+      setTravado(false)
+  }, [servicoEditado.cep])
+
+  useEffect(() => {
+    if(servicoEditado.tipoServico !==5){
+      setServicoEditado((prevState:any) =>({
+        ...prevState,
+        cep: '',
+        endereco: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: ''
+      }))
+    }
+  },[servicoEditado.tipoServico])
+
   useEffect(() => {
     setPreview(preViewSv.filter((imagem: string) => imagem !== null));
   },[preViewSv])
 
   useEffect(()=>{
     setPreview(()=> [...imagemOriginal, ...imagemServico.map((imagem: File) => URL.createObjectURL(imagem))])
-    console.log('imagens antigas: ', imagemOriginal.length);
-    console.log('imagens novas: ', imagemServico.length);
   },[imagemServico,imagemOriginal])
   
   useEffect(()=>{
@@ -188,10 +230,15 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario,
     }
   }, [servico]);
 
-  
+  const validaCep = ()=>{
+    if (servicoEditado.cep.lenght !==8 && servicoEditado.tipoServico===5)
+      setErroCepInvalido(true)
+  }
 
   const editarServico = async () => {
     if (!await validarFormulario()) return;
+    validaCep()
+    if(erroCepInvalido)return;
     if (!servicoEditado) return alert("Serviço não carregado corretamente!");    
     try {
       const formData = new FormData();
@@ -203,7 +250,15 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario,
       formData.append("qntMinima", servicoEditado.qntMinima);
       formData.append("qntMaxima", servicoEditado.qntMaxima);
       formData.append("valorServico", servicoEditado.valorServico);
-      formData.append("valorPromoServico", servicoEditado.valorPromoServico);
+      formData.append("valorPromoServico", servicoEditado.valorPromoServico||'');
+      formData.append("servicoCep",servicoEditado.cep);
+      formData.append("servicoEndereco",servicoEditado.endereco);
+      formData.append("servicoNumero",servicoEditado.numero);
+      formData.append("servicoComplemento",servicoEditado.complemento);
+      formData.append("servicoBairro",servicoEditado.bairro);
+      formData.append("servicoCidade",servicoEditado.cidade);
+      formData.append("servicoEstado",servicoEditado.estado);
+      
       imagemOriginal.map((imagem: string) => {
         const imagemSemLink = imagem.split('/')
         formData.append("imagensMantidas", imagemSemLink[imagemSemLink.length - 1]);
@@ -256,21 +311,30 @@ const CabecalhoServico = ({idServico, servico, preViewSv, setServico, idUsuario,
     setAbrirApagarServico(!abrirApagarServico)
   }
 
-const unidadeValor: Unidade[] = [
-  { id: 1, nome: "Unidade" },
-  { id: 2, nome: "Hora" },
-  { id: 3, nome: "Turno" },
-  { id: 4, nome: "Diaria" },
-  { id: 5, nome: "Alugel" },
-  { id: 6, nome: "sessão" },
-  { id: 7, nome: "pessoa" },
-];
+  const unidadeValor: Unidade[] = [
+    { id: 1, nome: "Unidade" },
+    { id: 2, nome: "Hora" },
+    { id: 3, nome: "Turno" },
+    { id: 4, nome: "Diaria" },
+    { id: 5, nome: "Alugel" },
+    { id: 6, nome: "sessão" },
+    { id: 7, nome: "pessoa" },
+  ];
+
+  const estadosBrasil = [
+      "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", 
+      "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", 
+      "RO", "RR", "RS", "SC", "SE", "SP", "TO"
+    ];
 
 
 
   return (
     <div className="cabecalho-servicos">
       <div className='container'>
+        <div className='cabecalho-servico__seta'>
+          <Seta tipo='prestador' caminho='/prestador/meus-servicos'/>
+        </div>
         <div className="titulo-infos-eventos">
           <div className="titulo-informacoes">
             <div className="titulo-do-evento">
@@ -289,7 +353,7 @@ const unidadeValor: Unidade[] = [
               <div className='alinhamento-info-icone-servico'>
                 <span className='icone-preco-servico'>R$</span>
                 <div>
-                  {Number(servico.valorServico).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace('R$', '').trim()}<span className='cor-unidade-servico'>{`/${unidade}`}</span>
+                  {Number(servico.valorServico).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace('R$', '').trim()}<span className='cor-unidade-servico'>{`/${unidade.toLowerCase()}`}</span>
                 </div>
               </div>
             </div>
@@ -359,7 +423,6 @@ const unidadeValor: Unidade[] = [
           <div className='modal-anunciar-servico__duracao'>
             <div className='modal-anunciar-servico__titulo-duracao'>
               Duração
-              <ToolTip prestador mensagem='Você pode desativar este anúncio manualmente a qualquer momento. Caso defina uma data de término, o anúncio será encerrado automaticamente ao início desse dia, sem necessidade de ação manual.'/>
             </div>
             <div className='teste'>
               <InputRadio
@@ -440,27 +503,29 @@ const unidadeValor: Unidade[] = [
                         textoPadrao='Selecione o tipo de servico'
                         cor='var(--yellow-700)'
                         valor={servicoEditado?.tipoServico}
-                        funcao={(e: ChangeEvent<HTMLSelectElement>) => setServicoEditado((prev:any) => prev ? { ...prev, tipoServico: e.target.value } : null)}
+                        funcao={(e: ChangeEvent<HTMLSelectElement>) => setServicoEditado((prev:any) => prev ? { ...prev, tipoServico: Number(e.target.value) } : null)}
                         required={true}
                       >
-                        {tipoServicoDisponiveis.map(tipo => <option value={tipo.idTipoServico}>{tipo.descricaoTipoServico}</option>)}
+                        {tipoServicoDisponiveis.map(tipo => <option value={tipo.idTipoServico} key={tipo.idTipoServico}>{tipo.descricaoTipoServico}</option>)}
                       </Select>
                       {erros.idTipoServico && <ErroCampoForm mensagem={erros.idTipoServico}/>}
                     </div>
                   </div>
                 </div>
                 <div className='descricao-input-evento'>
-                  <div>Descrição do servico(Opcional)</div>
                   <div className='input-tamanho-descricao'>
-                    <Input 
+                    <TextArea
+                      titulo='Descrição do serviço'
+                      placeholder='Digite uma descrição para o seu serviço...'
+                      name='descricao-servico'
                       cor='var(--yellow-700)'
-                      value={servicoEditado?.descricaoServico || ""}  
+                      valor={servicoEditado?.descricaoServico || ""}
                       onChange={(e:any) => setServicoEditado((prev:any) =>
-                      prev ? { ...prev, descricaoServico: e.target.value } : null
+                        prev ? { ...prev, descricaoServico: e.target.value } : null
                       )} 
-                      type='text' 
-                      dica='Digite uma descrição para o seu servico...'
-                    />
+                      maximo={4000}
+                      obrigatorio
+                      />
                     {erros.descricaoServico && <ErroCampoForm mensagem={erros.descricaoServico}/>} 
                   </div>
                 </div>
@@ -482,7 +547,7 @@ const unidadeValor: Unidade[] = [
                   />
                   {preView ? preView.map((imagem: string, index:number)=>{
                     if (preView[index] !== null)
-                    return <div className="col-12 col-sm-6 cadastro-servico__container-imagem">
+                    return <div className="col-12 col-sm-6 cadastro-servico__container-imagem" key={index}>
                       <img key={imagem} src={imagem} alt="imagem do serviço" className="cadastro-servico__imagem-preview"/>
                       <button className='cadastro-servico__remover-image' type="button" onClick={()=>{
                         inputImagemRef.current!.value = ''
@@ -519,7 +584,7 @@ const unidadeValor: Unidade[] = [
                         prev ? { ...prev, unidadeCobranca: e.target.value } : null
                       )}>
                       {unidadeValor.map((unidade)=>{
-                      return <option id={unidade.id.toString()} value={unidade.id}>{unidade.nome}</option>
+                      return <option id={unidade.id.toString()} value={unidade.id} key={unidade.id}>{unidade.nome}</option>
                       })}
                     </Select>
                     {erros.unidadeCobranca && <ErroCampoForm mensagem={erros.unidadeCobranca}/>}
@@ -587,6 +652,119 @@ const unidadeValor: Unidade[] = [
                     </div>
                   </div>
                 </div>
+                {servicoEditado.tipoServico === 5?<div className='row g-4'>
+                  <div className='col-lg-3'>
+                    <PatternFormat
+                            format={'#####-###'}
+                            mask={'_'}
+                            value={servicoEditado.cep}
+                            onValueChange={(values) => {
+                              setServicoEditado({...servicoEditado, cep: values.value });
+                            }}
+                            customInput={Input}
+                            cabecalho
+                            cabecalhoTexto={`CEP`} 
+                            placeholder='Digite o CEP do local' 
+                            name='cep'
+                            cor='#F3C623'
+                          />
+                    {erroCepInvalido?<ErroCampoForm mensagem='CEP inválido'/>:''}
+                  </div>
+                  <div className='col-lg-9'>
+                    <Input 
+                            cabecalho 
+                            cabecalhoTexto={`Endereço`}
+                            placeholder='Digite o endereço do local' 
+                            tipo='text' 
+                            valor={servicoEditado.endereco} 
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              setServicoEditado({...servicoEditado, endereco: e.target.value });
+                            }} 
+                            disabled={travado} 
+                            name='endereco'
+                            cor='#F3C623'
+                          />
+                  </div>
+                  <div className='col-lg-3'>
+                    <PatternFormat   
+                            format={'#####'}                
+                            value={servicoEditado.numero}
+                            onValueChange={(values) => {
+                              setServicoEditado({...servicoEditado, numero: values.value });
+                            } }
+                            customInput={Input}
+                            cabecalho 
+                            cabecalhoTexto={`Número`}
+                            placeholder='Digite o número do local'     
+                            name='numero-endereco'  
+                            cor='#F3C623'
+                          />
+                  </div>
+                  <div className='col-lg-9'>
+                    <Input 
+                            cabecalho 
+                            cabecalhoTexto={'Complemento (opcional)'} 
+                            placeholder='Digite o complemento do local' 
+                            tipo='text' 
+                            valor={servicoEditado.complemento} 
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              setServicoEditado({...servicoEditado, complemento: e.target.value });
+                            }} 
+                            obrigatorio={false}
+                            name='complemento'
+                            cor='#F3C623'
+                          />
+                  </div>
+                  <div>
+                    <Input 
+                            cabecalho 
+                            cabecalhoTexto={`Bairro`} 
+                            placeholder='Digite o bairro do local do evento' 
+                            tipo='text' 
+                            valor={servicoEditado.bairro} 
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              setServicoEditado({...servicoEditado, bairro: e.target.value });
+                            }} 
+                            disabled={travado} 
+                            name='bairro'
+                            cor='#F3C623'
+                          />
+                  </div>
+                  <div className='col-lg-9'>
+                    <Input 
+                            cabecalho 
+                            cabecalhoTexto={`Cidade`} 
+                            placeholder='Digite a cidade do local do evento' 
+                            tipo='text' 
+                            valor={servicoEditado.cidade} 
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              setServicoEditado({...servicoEditado, cidade: e.target.value });
+                            }} 
+                            disabled={travado} 
+                            name='cidade'
+                            cor='#F3C623'
+                          />
+                  </div>
+                  <div className='col-lg-3'>
+                    <Select 
+                            cabecalho 
+                            cabecalhoTexto={`UF`} 
+                            textoPadrao='Selecione a UF'
+                            dica='Selecione a UF'
+                            valor={servicoEditado.estado} 
+                            funcao={(e: ChangeEvent<HTMLSelectElement>) => {
+                              setServicoEditado({...servicoEditado, estado: e.target.value });
+                            }} 
+                            disabled={travado}
+                            required
+                            esconderValorPadrao={false}
+                            name='estado'
+                            cor='#F3C623'
+                          >
+                              {estadosBrasil.map((estado, index) => <option key={index} value={estado}>{estado}</option>)}
+                          </Select>
+                  </div>
+                </div>:''}
               </div>  
             </div>
           </Modal>

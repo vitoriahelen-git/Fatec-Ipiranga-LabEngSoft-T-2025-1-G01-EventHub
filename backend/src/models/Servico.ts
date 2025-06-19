@@ -23,6 +23,13 @@ class Servico extends Model{
     declare anunciado: boolean;
     declare dataInicioAnuncio: Date | null;
     declare dataFimAnuncio: Date | null;
+    declare cep: string | null;
+    declare endereco: string | null;
+    declare numero: string | null;
+    declare complemento: string | null;
+    declare bairro: string | null;
+    declare cidade: string | null;
+    declare estado: string | null;
 }
 
 Servico.init(
@@ -113,6 +120,34 @@ Servico.init(
         },
         dataFimAnuncio:{
             type:DataTypes.DATE,
+            allowNull:true
+        },
+        cep:{
+            type:DataTypes.STRING(10),
+            allowNull:true
+        },
+        endereco:{
+            type:DataTypes.STRING(200),
+            allowNull:true
+        },
+        numero:{
+            type:DataTypes.STRING(20),
+            allowNull:true
+        },
+        complemento:{
+            type:DataTypes.STRING(100),
+            allowNull:true
+        },
+        bairro:{
+            type:DataTypes.STRING(100),
+            allowNull:true
+        },
+        cidade:{
+            type:DataTypes.STRING(100),
+            allowNull:true
+        },
+        estado:{
+            type:DataTypes.STRING(2),
             allowNull:true
         }
     },{

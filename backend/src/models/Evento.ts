@@ -113,6 +113,10 @@ Evento.init(
 
 Usuario.hasMany(Evento,{foreignKey:'idUsuario',   onDelete: 'CASCADE'});
 TipoEvento.hasMany(Evento,{foreignKey:'idTipoEvento',   onDelete: 'CASCADE'});
-
+Evento.belongsTo(Usuario, {
+  foreignKey: 'idUsuario',
+  targetKey: 'codigoUsu',
+  as: 'Usuario'
+});
 
 export default Evento;

@@ -8,6 +8,8 @@ class Pedido extends Model {
     declare codigoUsu: string; // ID do usuário que fez o pedido
     declare idEvento: number; // ID do evento relacionado ao pedido
     declare dataPedido: Date; // Data em que o pedido foi feito
+    declare localEntrega?: string; // Local onde o pedido deve ser entregue
+    declare dataEntrega: Date; // Data em que o pedido deve ser entregue
     declare status: string; // Status do pedido (ex: 'Pendente', 'Em Andamento', 'Concluído', 'Cancelado')
     declare valorTotal: number; // Valor total do pedido, calculado a partir dos itens do pedido
 }
@@ -32,6 +34,14 @@ Pedido.init(
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW
+        },
+        localEntrega: {
+            type: DataTypes.STRING(255),
+            allowNull: true
+        },
+        dataEntrega: {
+            type: DataTypes.DATE,
+            allowNull: false
         },
         status: {
             type: DataTypes.STRING(20),

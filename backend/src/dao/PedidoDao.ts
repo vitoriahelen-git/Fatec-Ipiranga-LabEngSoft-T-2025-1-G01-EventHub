@@ -4,11 +4,14 @@ import Pedido from "../models/Pedido";
 import ItemPedido from "../models/ItemPedido";
 import Evento from "../models/Evento";
 import Servico from "../models/Servico";
+import Usuario from "../models/Usuario";
 
 export default class PedidoDao {
     public finalizarPedido = async (
         codigoUsu: string,
         idEvento: number,
+        localEntrega: string,
+        dataEntrega: Date,
         itens: {
             idServico: string;
             nomeItem: string;
@@ -23,6 +26,8 @@ export default class PedidoDao {
             const pedido = await Pedido.create({ //gravando o pedido no banco sem os itens por enquanto (e sem total)
                 codigoUsu: codigoUsu,
                 idEvento,
+                localEntrega: localEntrega,
+                dataEntrega: dataEntrega,
                 status: 'pendente',
                 dataCriacao: new Date(),
             }, { transaction: t });
@@ -142,5 +147,127 @@ export default class PedidoDao {
             nomeEvento: nomeEvento ? (nomeEvento as { [key: string]: any })['Evento.nomeEvento'] : null
         };
     }
+
+    public listarPedidosPrestador = async (codigoUsu: string) => {
+        const pedidos = await Pedido.findAll({
+            attributes: [
+                'idPedido',
+                'dataPedido',
+                [fn('SUM', col('ItemPedidos.valorTotal')), 'valorTotalDoPrestador'],
+                'status',
+                'codigoUsu',
+                'localEntrega',
+                'dataEntrega',
+                [sequelize.fn('COUNT', sequelize.col('ItemPedidos.idItemPedido')), 'quantidadeItens']
+            ],
+            include: [
+                {
+                model: ItemPedido,
+                as: 'ItemPedidos',
+                required: true,
+                attributes: [],
+                include: [
+                    {
+                    model: Servico,
+                    as: 'Servico',
+                    attributes: [],
+                    where: {
+                        idUsuario: codigoUsu
+                    }
+                    }
+                ]
+                },
+                {
+                model: Evento,
+                as: 'Evento',
+                attributes: ['nomeEvento'],
+                include: [
+                    {
+                    model: Usuario,
+                    as: 'Usuario',
+                    attributes: ['nomeUsu']
+                    }
+                ]
+                }
+            ],
+            group: [
+                'Pedido.idPedido',
+            ],
+            order: [['dataPedido', 'DESC']],
+            raw: true,
+            nest: true
+            });
+        return pedidos;
+    }
+
+    public listarItensPedidoPrestador = async (idPedido: number, codigoUsu: string) => {
+        const itens = await ItemPedido.findAll({
+            where: { idPedido: idPedido },
+            attributes: ['idItemPedido', 'idServico', 'nomeItem', 'valorUnitario', 'quantidade', 'instrucao', 'valorTotal'],
+            include: [
+                {
+                    model: Servico,
+                    as: 'Servico',
+                    attributes: ['imagem1'],
+                    where: { idUsuario: codigoUsu }
+                }
+            ]
+        });
+
+        const pedido = await Pedido.findOne({
+            where: { idPedido: idPedido },
+            attributes: ['idPedido', 'codigoUsu', 'dataPedido', 'valorTotal', 'localEntrega', 'dataEntrega'],
+            include: [
+                {
+                    model: Evento,
+                    as: 'Evento',
+                    attributes: ['nomeEvento'],
+                    include: [
+                        {
+                            model: Usuario,
+                            as: 'Usuario',
+                            attributes: ['nomeUsu', 'telUsu']
+                        }
+                    ]
+                }
+            ],
+            raw: true,
+            nest: true
+        }) as unknown as {
+            idPedido: number;
+            codigoUsu: string;
+            dataPedido: Date;
+            valorTotal: number;
+            localEntrega: string;
+            dataEntrega: Date;
+            Evento: {
+                nomeEvento: string;
+                Usuario: {
+                    nomeUsu: string;
+                    telUsu: string;
+                }
+            }
+        } | null;
+
+        if (!pedido) {
+            throw new Error('Pedido não encontrado');
+        }
+
+        return {
+            itens,
+            pedido: {
+                idPedido: pedido.idPedido,
+                codigoUsu: pedido.codigoUsu,
+                dataPedido: pedido.dataPedido,
+                localEntrega: pedido.localEntrega,
+                dataEntrega: pedido.dataEntrega,
+                nomeEvento: pedido.Evento.nomeEvento,
+                nomeCliente: pedido.Evento.Usuario.nomeUsu,
+                telefoneCliente: pedido.Evento.Usuario.telUsu,
+            }
+        };
+    }
+
+
 
 }

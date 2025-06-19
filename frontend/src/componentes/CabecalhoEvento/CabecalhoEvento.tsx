@@ -12,7 +12,8 @@ import { PatternFormat } from 'react-number-format';
 import sweetAlert from 'sweetalert2'
 import Alerta from '../Alerta/Alerta'
 import InputQuantidade from '../InputQuantidade/InputQuantidade'
-import ToolTip from '../ToolTip/ToolTip'
+import TextArea from '../TextArea/TextArea'
+import Seta from '../Seta/Seta'
 
 interface TipoEvento {
   idTipoEvento: string;
@@ -245,6 +246,9 @@ const CabecalhoEvento = ({ idEvento, evento, preViewEv, setEvento, idUsuario }: 
   return (
     <div className="cabecalho-eventos">
       <div className='container'>
+        <div className='cabecalho-evento__seta'>
+          <Seta caminho='/organizador/meus-eventos'/>
+        </div>
         <div className="titulo-infos-eventos">
           <div className="titulo-informacoes">
             <div className="titulo-do-evento">
@@ -362,16 +366,16 @@ const CabecalhoEvento = ({ idEvento, evento, preViewEv, setEvento, idUsuario }: 
                   </div>
                 </div>
                 <div className='descricao-input-evento'>
-                  <div>Descrição do evento(Opcional)</div>
                   <div className='input-tamanho-descricao'>
-                    <Input
-                      value={eventoEditado?.descricaoEvento || ""}
+                    <TextArea
+                      titulo='Descrição do evento (opcional)'
+                      placeholder='Digite uma descrição para o seu evento...'
+                      name='descricao-evento'
+                      valor={eventoEditado?.descricaoEvento || ""}
                       onChange={(e: any) => setEventoEditado((prev: any) =>
                         prev ? { ...prev, descricaoEvento: e.target.value } : null
                       )}
-                      type='text'
-                      dica='Digite uma descrição para o seu evento...'
-                    />
+                      />
                   </div>
                 </div>
                 <div className='imagem-evento'>
@@ -593,7 +597,6 @@ const CabecalhoEvento = ({ idEvento, evento, preViewEv, setEvento, idUsuario }: 
           <div className='modal-configuracoes-evento'>
             <div className='modal-configuracoes-evento__organizador'>
               <label htmlFor="qtd-acompanhantes" className='label-input-acompanhantes'>Máximo padrão de acompanhantes por convite</label>
-              <ToolTip mensagem="Define o número máximo de acompanhantes que um convidado poderá levar ao preencher seu convite. Esse valor será aplicado como padrão, mas poderá ser ajustado individualmente para convites específicos, se necessário."></ToolTip>
             </div>
             <div className='d-flex align-itens-center'>
               <div className='cabecalho-evento__input-acompanhantes'>

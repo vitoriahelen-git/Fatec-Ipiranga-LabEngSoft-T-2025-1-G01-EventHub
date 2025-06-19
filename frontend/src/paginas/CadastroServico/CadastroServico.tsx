@@ -12,6 +12,10 @@ import api from "../../axios"
 import ErroCampoForm from "../../componentes/ErroCampoForm/ErroCampoForm"
 import Alerta from "../../componentes/Alerta/Alerta"
 import { useNavigate } from "react-router"
+import { Helmet } from "react-helmet-async"
+import Seta from "../../componentes/Seta/Seta"
+import axios from "axios"
+import { use } from "framer-motion/client"
 
 
 interface tipoServico{
@@ -40,28 +44,77 @@ const CadastroServico = () => {
   const [valorServico, setValorServico] = useState(NaN)
   const [qntMinima, setQntMinima] = useState(NaN)
   const [qntMaxima, setQntMaxima] = useState(NaN)
+  const [localizacaoServico, setLocalizacaoServico] = useState({
+    cep: '',
+    endereco: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    estado: ''
+  })
 
   const [erro, setErro] = useState({
-    imagemObrigatoria:{status:false, mensagem:'Selecione pelo menos uma imagem'}
+    imagemObrigatoria:{status:false, mensagem:'Selecione pelo menos uma imagem'},
+    CepInvalido:{status:false, mensagem:'CEP inválido'}
   })
 
   const [aviso, setAviso] = useState<Avisos>({
     limiteImagem:{status:false, mensagem:'Limite de 6 imagens atingido'},
     valorServico:{status:false, mensagem:'Valor do serviço deve ser maior que 0'},
-    qntMinima:{status:false, mensagem:'Quantidade mínima deve ser maior que 0'}
+    qntMinima:{status:false, mensagem:'Quantidade mínima deve ser maior que 0'},
+    cepNaoEncontrado:{status:false, mensagem:'CEP não encontrado'}
   })
 
   const [qntFixa, setQntFixa] = useState(false)
   const [categoriaServico, setCategoriaServico] = useState<tipoServico[]>([])
   const [passoAtual, setPassoAtual] = useState(0)
+  const [travado, setTravado] = useState(false)
 
   const inputImagemRef = useRef<HTMLInputElement>(null)
 
-  const qntPassos = 3
+  const qntPassos = tipoServico === '5'? 4 : 3
 
   const maxImagensServico = 6
 
   const navigate = useNavigate()
+
+   const buscarCep = async (cep: string) => {
+    try { await axios.get(`https://viacep.com.br/ws/${cep}/json/`).then(res => {
+      const local = res.data
+      if(local.erro) 
+        setAviso(prevState => ({...prevState, cepNaoEncontrado:{...prevState.cepNaoEncontrado, status: true}}))
+      else {
+      setLocalizacaoServico( prevState => ({...prevState, endereco: local.logradouro, bairro: local.bairro, cidade: local.localidade, estado: local.uf}))
+      setTravado(true)
+      setErro(prevState => ({...prevState, CepInvalido:{...prevState.CepInvalido, status: false}}))
+      }
+    })}
+    catch (error) { console.log('ocorreu algum erro: ',error) }
+  }
+
+  useEffect(() => {
+    if(localizacaoServico.cep.length===8) 
+      buscarCep(localizacaoServico.cep)
+    if(localizacaoServico.cep.length===0) 
+      setErro(prevState => ({...prevState, CepInvalido:{...prevState.CepInvalido, status: false}}))
+    else
+      setTravado(false)
+  }, [localizacaoServico.cep])
+
+  useEffect(() => {
+    if(tipoServico !=='5'){
+      setLocalizacaoServico({
+        cep: '',
+        endereco: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: ''
+      })
+    }
+  },[tipoServico])
 
   useEffect(()=>{
     const preview = imagensServico.map((imagem)=>{
@@ -105,6 +158,11 @@ const CadastroServico = () => {
     { id:7 ,nome:"pessoa" },
   ]
   
+   const estadosBrasil = [
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", 
+    "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", 
+    "RO", "RR", "RS", "SC", "SE", "SP", "TO"
+  ];
 
   const instrucao = [
     {
@@ -113,12 +171,13 @@ const CadastroServico = () => {
       campos: [
         <Input
         cabecalho
-        cabecalhoTexto='Nome do Serviço'
+        cabecalhoTexto='Nome do serviço'
         tipo='text'
-        dica='digite um nome para o serviço'
+        dica='Digite um nome para o serviço'
         valor={nomeServico}
         cor='#F3C623'
         onChange={(e: ChangeEvent<HTMLInputElement>)=>{setNomeServico(e.target.value)}}
+        name='nome-servico'
         />,
         <Select
         cabecalho
@@ -129,14 +188,15 @@ const CadastroServico = () => {
         valor={tipoServico}
         required
         onChange={(e: ChangeEvent<HTMLSelectElement>)=>{setTipoServico(e.target.value)}}
+        name='categoria-servico'
         >
           {categoriaServico.map((categoria)=>{
             return <option key={categoria.idTipoServico} value={categoria.idTipoServico}>{categoria.descricaoTipoServico}</option>
           })}
         </Select>,
         <TextArea
-        titulo='Descrição do Serviço'
-        placeholder='Descreva o serviço que você deseja criar'
+        titulo='Descrição do serviço'
+        placeholder='Digite uma descrição para o seu serviço...'
         name='descricao-servico'
         cor='#F3C623'
         valor={descricaoServico}
@@ -180,7 +240,7 @@ const CadastroServico = () => {
         <Select 
         cabecalho
         cabecalhoTexto = 'Unidade de cobrança'
-        textoPadrao = 'Selecione a Unidade'
+        textoPadrao = 'Selecione a unidade'
         cor='#F3C623'
         esconderValorPadrao
         required
@@ -188,9 +248,10 @@ const CadastroServico = () => {
         onChange = {(e: ChangeEvent<HTMLSelectElement>)=>{
             setUnidadeCobranca(Number(e.target.value))
           }}
+        name='unidade-cobranca'
         >
           {unidadeValor.map((unidade)=>{
-            return <option id={unidade.id.toString()} value={unidade.id}>{unidade.nome}</option>
+            return <option id={unidade.id.toString()} key={unidade.id} value={unidade.id}>{unidade.nome}</option>
           })}
         </Select>,
         <NumericFormat
@@ -206,9 +267,10 @@ const CadastroServico = () => {
           setValorServico(values.floatValue || 0);
         }}
         cabecalho
-        cabecalhoTexto='Preço do Serviço (Por Unidade Escolhida)'
-        dica='Digite o valor do Serviço'
+        cabecalhoTexto='Preço do serviço por unidade'
+        dica='Digite o valor do serviço'
         cor='#F3C623'
+        name='valor-servico'
         />,
         <PatternFormat
         format='#########'
@@ -217,8 +279,9 @@ const CadastroServico = () => {
         customInput={Input}
         cabecalho
         cabecalhoTexto='Quantidade mínima'
-        dica='Digite a quantidade mínima do Serviço'
+        dica='Digite a quantidade mínima do serviço'
         cor='#F3C623'
+        name='qnt-minima'
         />,
           <PatternFormat
         format='#########'
@@ -226,9 +289,10 @@ const CadastroServico = () => {
         onValueChange={(values) => {setQntMaxima(Number(values.value))}}
         customInput={Input}
         cabecalho
-        cabecalhoTexto='Quantidade Máxima'
-        dica='Digite a quantidade máxima do Serviço'
+        cabecalhoTexto='Quantidade máxima'
+        dica='Digite a quantidade máxima do serviço'
         cor='#F3C623'
+        name='qnt-maxima'
         />,
          <PatternFormat
         format='#########'
@@ -237,8 +301,9 @@ const CadastroServico = () => {
         customInput={Input}
         cabecalho
         cabecalhoTexto='Quantidade'
-        dica='Digite a quantidade do Serviço'
+        dica='Digite a quantidade do serviço'
         cor='#F3C623'
+        name='qnt'
         />,
           <CheckBox
           ativado={qntFixa}
@@ -250,9 +315,112 @@ const CadastroServico = () => {
               setQntMaxima(qntMinima)
             }
           }}
+          name='qnt-fixa'
           />
 
       ]
+    },
+    {
+      titulo:'Localização do Serviço',
+            texto:'Preencha os campos com a localização do espaço que será realizado seu serviço.',
+            campos:[
+              <PatternFormat
+                format={'#####-###'}
+                mask={'_'}
+                value={localizacaoServico.cep}
+                onValueChange={(values) => {
+                  setLocalizacaoServico({...localizacaoServico, cep: values.value });
+                }}
+                customInput={Input}
+                cabecalho
+                cabecalhoTexto={`CEP`} 
+                placeholder='Digite o CEP do local' 
+                name='cep'
+                cor='#F3C623'
+              />,
+              <Input 
+                cabecalho 
+                cabecalhoTexto={`Endereço`}
+                placeholder='Digite o endereço do local' 
+                tipo='text' 
+                valor={localizacaoServico.endereco} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setLocalizacaoServico({...localizacaoServico, endereco: e.target.value });
+                }} 
+                disabled={travado} 
+                name='endereco'
+                cor='#F3C623'
+              />,
+              <PatternFormat   
+                format={'#####'}                
+                value={localizacaoServico.numero}
+                onValueChange={(values) => {
+                  setLocalizacaoServico({...localizacaoServico, numero: values.value });
+                } }
+                customInput={Input}
+                cabecalho 
+                cabecalhoTexto={`Número`}
+                placeholder='Digite o número do local'     
+                name='numero-endereco'  
+                cor='#F3C623'
+              />,
+              <Input 
+                cabecalho 
+                cabecalhoTexto={'Complemento (opcional)'} 
+                placeholder='Digite o complemento do local' 
+                tipo='text' 
+                valor={localizacaoServico.complemento} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setLocalizacaoServico({...localizacaoServico, complemento: e.target.value });
+                }} 
+                obrigatorio={false}
+                name='complemento'
+                cor='#F3C623'
+              />,
+              <Input 
+                cabecalho 
+                cabecalhoTexto={`Bairro`} 
+                placeholder='Digite o bairro do local do evento' 
+                tipo='text' 
+                valor={localizacaoServico.bairro} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setLocalizacaoServico({...localizacaoServico, bairro: e.target.value });
+                }} 
+                disabled={travado} 
+                name='bairro'
+                cor='#F3C623'
+              />,
+              <Input 
+                cabecalho 
+                cabecalhoTexto={`Cidade`} 
+                placeholder='Digite a cidade do local do evento' 
+                tipo='text' 
+                valor={localizacaoServico.cidade} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setLocalizacaoServico({...localizacaoServico, cidade: e.target.value });
+                }} 
+                disabled={travado} 
+                name='cidade'
+                cor='#F3C623'
+              />,
+              <Select 
+                cabecalho 
+                cabecalhoTexto={`UF`} 
+                textoPadrao='Selecione a UF'
+                dica='Selecione a UF'
+                valor={localizacaoServico.estado} 
+                funcao={(e: ChangeEvent<HTMLSelectElement>) => {
+                  setLocalizacaoServico({...localizacaoServico, estado: e.target.value });
+                }} 
+                disabled={travado}
+                required
+                esconderValorPadrao={false}
+                name='estado'
+                cor='#F3C623'
+              >
+                  {estadosBrasil.map((estado, index) => <option key={index} value={estado}>{estado}</option>)}
+              </Select>
+            ]
     }
   ]
   const etapa = [
@@ -273,14 +441,15 @@ const CadastroServico = () => {
       <div className="d-flex flex-column justify-content-center align-items-center cadastro-servico__etapa-imagem-sem-imagem">
           <div className="cadastro-servico__imagem-info">
             <div><i className="fa-solid fa-image cadastro-servico__imagem-icone"></i></div>
-            <div>Nenhuma imagem selecionada</div>
-            <div>clique no botão abaixo para adicionar</div>
+            <div className="cadastro-servico__imagem-info-titulo">Nenhuma imagem selecionada</div>
+            <div className="cadastro-servico__imagem-info-subtitulo">Clique no botão abaixo para adicionar</div>
           </div>
         <div className="cadastro-servico__imagem-botao">
           <Botao
             texto='Selecionar Imagens'
             funcao={()=>{inputImagemRef.current?.click()}}
             cor='#F3C623'
+            tamanho='min'
           />
         </div>
         {erro.imagemObrigatoria.status ? <ErroCampoForm mensagem={erro.imagemObrigatoria.mensagem} /> : ''}
@@ -289,12 +458,11 @@ const CadastroServico = () => {
     <div className='d-flex row g-4 justify-content-center cadastro-servico__etapa-imagem-com-imagem'>
        {
        imagemPreview.map((preView,index)=>{
-        return <div className="col-12 col-sm-6 cadastro-servico__container-imagem">
+        return <div className="col-12 col-sm-6 cadastro-servico__container-imagem" key={index}>
           <img key={preView} src={preView} alt="imagem do serviço" className="cadastro-servico__imagem-preview"/>
           <button className='cadastro-servico__remover-image' type="button" onClick={()=>{
             inputImagemRef.current!.value = ''
             setImagensServico(imagensServico.filter((_,i)=>i !== index))
-            console.log(imagensServico)
             }}>
             <i className="fa-solid fa-xmark cadastro-servico__remover-image-icone"></i>
           </button>
@@ -340,6 +508,31 @@ const CadastroServico = () => {
       <div className='col-lg-6'>
         {instrucao[passoAtual].campos[5]}
       </div>
+    </div>,
+
+    <div className='row g-4'>
+      <div className='col-lg-3'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[0]}
+        {erro.CepInvalido.status?<ErroCampoForm mensagem='CEP inválido'/>:''}
+      </div>
+      <div className='col-lg-9'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[1]}
+      </div>
+      <div className='col-lg-3'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[2]}
+      </div>
+      <div className='col-lg-9'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[3]}
+      </div>
+      <div>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[4]}
+      </div>
+      <div className='col-lg-9'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[5]}
+      </div>
+      <div className='col-lg-3'>
+        {instrucao[passoAtual].campos && instrucao[passoAtual].campos[6]}
+      </div>
     </div>
   ]
 
@@ -356,8 +549,14 @@ const CadastroServico = () => {
       formData.append('valorServico', String(valorServico))
       formData.append('qntMinima', String(qntMinima))
       formData.append('qntMaxima', String(qntMaxima))
+      formData.append('servicoCep', localizacaoServico.cep)
+      formData.append('servicoEndereco', localizacaoServico.endereco)
+      formData.append('servicoNumero', localizacaoServico.numero)
+      formData.append('servicoComplemento', localizacaoServico.complemento)
+      formData.append('servicoBairro', localizacaoServico.bairro)
+      formData.append('servicoCidade', localizacaoServico.cidade)
+      formData.append('servicoEstado', localizacaoServico.estado)
  
-    console.log('dados do serviço:')
     await api.post('/users/services', formData)
     console.log('Serviço cadastrado com sucesso!')
     navigate('/prestador/meus-servicos')
@@ -386,41 +585,56 @@ const CadastroServico = () => {
         setAviso(prevState=>({...prevState, qntMinima:{...prevState.qntMinima,status:true}}))
         return
       }
+      if(localizacaoServico.cep.length !== 8 && qntPassos === 4){
+        setErro(prevState=>({...prevState, CepInvalido:{...prevState.CepInvalido,status:true}}))
+        return
+      }
       CadastroServico()
     }
   }
 
   return (
-    <div className="cadastro-servico">
-      <h1 className="layout-titulo">Criar serviço</h1>
-      <form onSubmit={onSubimit} className="cadastro-servico__formulario" encType="multipart/form-data">
-        <IndicadorDePassos qntPassos = {qntPassos} passoAtual={passoAtual+1} cor = '#F3C623'/>
-        <Instrucao texto={instrucao[passoAtual].texto} titulo={instrucao[passoAtual].titulo} cor='#FFB22C'/>
-        <div>
-          {etapa[passoAtual]}
+    <>
+      <Helmet>
+        <title>Criar Serviço | EventHub</title>
+      </Helmet>
+      <div className="cadastro-servico">
+        <div className='cadastro-servico__seta'>
+          <Seta tipo='prestador' caminho='/prestador/meus-servicos'/>
         </div>
-        <div className="d-flex justify-content-center gap-2">
-          {passoAtual !== 0 ? 
+        <h1 className="layout-titulo">Criar serviço</h1>
+        <form onSubmit={onSubimit} className="cadastro-servico__formulario" encType="multipart/form-data">
+          <IndicadorDePassos qtdPassos = {qntPassos} passoAtual={passoAtual+1} cor = '#F3C623'/>
+          <Instrucao texto={instrucao[passoAtual].texto} titulo={instrucao[passoAtual].titulo} cor='#FFB22C'/>
           <div>
-            <Botao 
-            texto='Anterior'
-            funcao={()=>{setPassoAtual(passoAtual-1)}}
-            cor='#F3C623'
-            />
-          </div> : ''}
-          <div>
-            <Botao 
-            texto={passoAtual+1 < qntPassos ?'Próximo':'Cadastrar'}
-            submit
-            cor='#F3C623'
-            />
+            {etapa[passoAtual]}
           </div>
-        </div>
-      </form>
-      { aviso.limiteImagem.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.limiteImagem.status} status='aviso' texto={aviso.limiteImagem.mensagem}/> </div>: ''}
-      { aviso.valorServico.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.valorServico.status} status='aviso' texto={aviso.valorServico.mensagem}/> </div>: ''}
-      { aviso.qntMinima.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.qntMinima.status} status='aviso' texto={aviso.qntMinima.mensagem}/> </div>: ''}
-    </div>
+          <div className="cadastro-servico__botoes d-flex justify-content-center gap-2">
+            {passoAtual !== 0 ? 
+            <div>
+              <Botao 
+              texto='Anterior'
+              funcao={()=>{setPassoAtual(passoAtual-1)}}
+              cor='#F3C623'
+              tamanho='max'
+              />
+            </div> : ''}
+            <div>
+              <Botao 
+              texto={passoAtual+1 < qntPassos ?'Próximo':'Cadastrar'}
+              submit
+              cor='#F3C623'
+              tamanho='max'
+              />
+            </div>
+          </div>
+        </form>
+        { aviso.limiteImagem.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.limiteImagem.status} status='aviso' texto={aviso.limiteImagem.mensagem}/> </div>: ''}
+        { aviso.valorServico.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.valorServico.status} status='aviso' texto={aviso.valorServico.mensagem}/> </div>: ''}
+        { aviso.qntMinima.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.qntMinima.status} status='aviso' texto={aviso.qntMinima.mensagem}/> </div>: ''}
+        { aviso.cepNaoEncontrado.status ? <div className="cadastro-servico__alerta"><Alerta ativado={aviso.cepNaoEncontrado.status} status='aviso' texto={aviso.cepNaoEncontrado.mensagem}/> </div>: ''}
+      </div>
+    </>
   )
 }
 export default CadastroServico

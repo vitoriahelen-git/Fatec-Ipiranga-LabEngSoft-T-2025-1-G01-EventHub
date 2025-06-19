@@ -4,7 +4,7 @@ import Usuario from "../models/Usuario";
 import TipoServico from "../models/TipoServico";
 
 export default class ServicoDao{
-    public cadastrarServico = async (idUsuario: string, idTipoServico: number, nomeServico:string, descricaoServico:string, unidadeCobranca: string, valorServico:number, qntMinima: number, qntMaxima:number, imagem1:string, imagem2:string | null, imagem3:string | null,imagem4:string | null, imagem5:string | null, imagem6:string | null, transaction: Transaction | null = null)=>{
+    public cadastrarServico = async (idUsuario: string, idTipoServico: number, nomeServico:string, descricaoServico:string, unidadeCobranca: string, valorServico:number, qntMinima: number, qntMaxima:number, imagem1:string, imagem2:string | null, imagem3:string | null,imagem4:string | null, imagem5:string | null, imagem6:string | null, cep:string | null, endereco:string | null, numero:string | null, complemento:string | null, bairro:string | null, cidade:string | null, estado:string | null, transaction: Transaction | null = null)=>{
         const servico: Servico = await Servico.create({
             idUsuario,
             idTipoServico,
@@ -19,7 +19,15 @@ export default class ServicoDao{
             imagem3,
             imagem4,
             imagem5,
-            imagem6 
+            imagem6,
+            cep,
+            endereco,
+            numero,
+            complemento,
+            bairro,
+            cidade,
+            estado,
+
         }, transaction ? {transaction} : {});
         return servico;
     }
@@ -63,7 +71,14 @@ export default class ServicoDao{
             imagem3: string | null,
             imagem4: string | null,
             imagem5: string | null,
-            imagem6: string | null
+            imagem6: string | null,
+            servicoCep: string | null,
+            servicoEndereco: string | null,
+            servicoNumero: string | null,
+            servicoComplemento: string | null,
+            servicoBairro: string | null,
+            servicoCidade: string | null,
+            servicoEstado: string | null
         }
       ) => {
         const servico = await Servico.findByPk(id);
@@ -86,7 +101,14 @@ export default class ServicoDao{
             imagem3: dadosAtualizados.imagem3,
             imagem4: dadosAtualizados.imagem4,
             imagem5: dadosAtualizados.imagem5,
-            imagem6: dadosAtualizados.imagem6
+            imagem6: dadosAtualizados.imagem6,
+            cep:dadosAtualizados.servicoCep,
+            endereco:dadosAtualizados.servicoEndereco,
+            numero:dadosAtualizados.servicoNumero,
+            complemento:dadosAtualizados.servicoComplemento,
+            bairro:dadosAtualizados.servicoBairro,
+            cidade:dadosAtualizados.servicoCidade,
+            estado:dadosAtualizados.servicoEstado,
         });
       
         return servico;
